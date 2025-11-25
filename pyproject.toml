@@ -5,7 +5,7 @@ description = "A Python address parser using usaddress with Pydantic models, val
 readme = "README.md"
 license = { text = "MIT" }
 authors = [
-    { name = "Abstract-Data", email = "johnreakin@gmail.com" }
+    { name = "Abstract-Data", email = "dev@abstractdata.io" }
 ]
 keywords = ["address", "parser", "usaddress", "pydantic", "validation", "geocoding"]
 classifiers = [
