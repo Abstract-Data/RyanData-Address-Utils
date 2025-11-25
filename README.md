@@ -1,5 +1,11 @@
 # RyanData Address Utils
 
+[![CI](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/ci.yml/badge.svg)](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/ci.yml)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](https://mypy-lang.org/)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A production-ready Python address parser that uses `usaddress` to parse US addresses into structured Pydantic models with ZIP code and state validation. Features extensible architecture with Protocols, ABCs, and Factory patterns.
 
 ## Installation
