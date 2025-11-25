@@ -1,0 +1,78 @@
+[project]
+name = "ryandata-address-utils"
+version = "0.2.0"
+description = "A Python address parser using usaddress with Pydantic models, validation, and extensible architecture"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "Abstract-Data", email = "johnreakin@gmail.com" }
+]
+keywords = ["address", "parser", "usaddress", "pydantic", "validation", "geocoding"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Text Processing",
+    "Typing :: Typed",
+]
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.0.0",
+    "usaddress>=0.5.16",
+]
+
+[project.optional-dependencies]
+pandas = [
+    "pandas>=2.0.0",
+]
+
+[project.scripts]
+ryandata-address-utils = "ryandata_address_utils:main"
+
+[project.urls]
+Homepage = "https://github.com/Abstract-Data/RyanData-Address-Utils"
+Repository = "https://github.com/Abstract-Data/RyanData-Address-Utils.git"
+Issues = "https://github.com/Abstract-Data/RyanData-Address-Utils/issues"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.8.0",
+    "mypy>=1.13.0",
+    "pytest>=8.0.0",
+    "hypothesis>=6.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ryandata_address_utils"]
+
+[tool.hatch.build.targets.wheel.sources]
+"src" = ""
+
+# Include data files
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/ryandata_address_utils/**/*.csv",
+]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/ryandata_address_utils/data/uszips.csv" = "ryandata_address_utils/data/uszips.csv"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+ignore_missing_imports = true

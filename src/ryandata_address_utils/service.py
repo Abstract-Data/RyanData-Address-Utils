@@ -1,0 +1,330 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Sequence
+
+from ryandata_address_utils.data import DataSourceFactory
+from ryandata_address_utils.models import ADDRESS_FIELDS, ParseResult, ZipInfo
+from ryandata_address_utils.parsers import ParserFactory
+from ryandata_address_utils.validation.validators import create_default_validators
+
+if TYPE_CHECKING:
+    import pandas as pd
+
+    from ryandata_address_utils.models import Address
+    from ryandata_address_utils.protocols import (
+        AddressParserProtocol,
+        DataSourceProtocol,
+        ValidatorProtocol,
+    )
+
+
+class AddressService:
+    """High-level facade for address parsing operations.
+
+    Orchestrates parsers, validators, and data sources to provide
+    a simple API for common address parsing tasks.
+
+    Example:
+        >>> service = AddressService()
+        >>> result = service.parse("123 Main St, Austin TX 78749")
+        >>> print(result.address.StreetName)  # "Main"
+
+        # Without validation
+        >>> result = service.parse("123 Main St", validate=False)
+
+        # Custom components
+        >>> from ryandata_address_utils.data import CSVDataSource
+        >>> service = AddressService(data_source=CSVDataSource("/path/to/zips.csv"))
+    """
+
+    def __init__(
+        self,
+        parser: "AddressParserProtocol | None" = None,
+        data_source: "DataSourceProtocol | None" = None,
+        validator: "ValidatorProtocol | None" = None,
+        check_state_match: bool = False,
+    ) -> None:
+        """Initialize the address service.
+
+        Args:
+            parser: Parser implementation. Defaults to USAddressParser.
+            data_source: Data source for validation. Defaults to CSVDataSource.
+            validator: Validator implementation. Defaults to composite validator.
+            check_state_match: If True, verify ZIP matches state during validation.
+        """
+        self._parser = parser or ParserFactory.create()
+        self._data_source = data_source or DataSourceFactory.create()
+
+        if validator is not None:
+            self._validator = validator
+        else:
+            self._validator = create_default_validators(
+                self._data_source,
+                check_state_match=check_state_match,
+            )
+
+    @property
+    def parser(self) -> "AddressParserProtocol":
+        """Get the parser instance."""
+        return self._parser
+
+    @property
+    def data_source(self) -> "DataSourceProtocol":
+        """Get the data source instance."""
+        return self._data_source
+
+    @property
+    def validator(self) -> "ValidatorProtocol":
+        """Get the validator instance."""
+        return self._validator
+
+    def parse(
+        self,
+        address_string: str,
+        *,
+        validate: bool = True,
+    ) -> ParseResult:
+        """Parse a single address string.
+
+        Args:
+            address_string: Raw address string to parse.
+            validate: If True, validate the parsed address.
+
+        Returns:
+            ParseResult containing the parsed address, validation results,
+            or error information.
+        """
+        result = self._parser.parse(address_string)
+
+        if validate and result.is_parsed and result.address is not None:
+            result.validation = self._validator.validate(result.address)
+
+        return result
+
+    def parse_batch(
+        self,
+        addresses: Sequence[str],
+        *,
+        validate: bool = True,
+    ) -> list[ParseResult]:
+        """Parse multiple address strings.
+
+        Args:
+            addresses: Sequence of raw address strings to parse.
+            validate: If True, validate the parsed addresses.
+
+        Returns:
+            List of ParseResult objects.
+        """
+        results = self._parser.parse_batch(addresses)
+
+        if validate:
+            for result in results:
+                if result.is_parsed and result.address is not None:
+                    result.validation = self._validator.validate(result.address)
+
+        return results
+
+    def parse_to_dict(
+        self,
+        address_string: str,
+        *,
+        validate: bool = True,
+        errors: str = "raise",
+    ) -> dict[str, str | None]:
+        """Parse an address and return a dictionary.
+
+        Args:
+            address_string: Raw address string to parse.
+            validate: If True, validate the parsed address.
+            errors: How to handle errors:
+                - "raise": Raise exception on failure
+                - "coerce": Return dict with None values on failure
+
+        Returns:
+            Dictionary mapping field names to values.
+
+        Raises:
+            ValueError: If parsing fails and errors="raise".
+        """
+        result = self.parse(address_string, validate=validate)
+
+        if not result.is_valid:
+            if errors == "raise":
+                if result.error:
+                    raise result.error
+                if result.validation and not result.validation.is_valid:
+                    error_msgs = [e.message for e in result.validation.errors]
+                    raise ValueError(f"Validation failed: {'; '.join(error_msgs)}")
+            return {f: None for f in ADDRESS_FIELDS}
+
+        return result.to_dict()
+
+    def lookup_zip(self, zip_code: str) -> ZipInfo | None:
+        """Look up information about a ZIP code.
+
+        Args:
+            zip_code: US ZIP code (5 digits or ZIP+4).
+
+        Returns:
+            ZipInfo if found, None otherwise.
+        """
+        return self._data_source.get_zip_info(zip_code)
+
+    def get_city_state_from_zip(self, zip_code: str) -> tuple[str, str] | None:
+        """Look up city and state from a ZIP code.
+
+        Args:
+            zip_code: US ZIP code (5 digits or ZIP+4).
+
+        Returns:
+            Tuple of (city, state_abbreviation) or None if not found.
+        """
+        info = self.lookup_zip(zip_code)
+        if info:
+            return (info.city, info.state_id)
+        return None
+
+    def is_valid_zip(self, zip_code: str) -> bool:
+        """Check if a ZIP code is valid.
+
+        Args:
+            zip_code: US ZIP code to check.
+
+        Returns:
+            True if valid, False otherwise.
+        """
+        return self._data_source.is_valid_zip(zip_code)
+
+    def is_valid_state(self, state: str) -> bool:
+        """Check if a state name or abbreviation is valid.
+
+        Args:
+            state: State name or abbreviation.
+
+        Returns:
+            True if valid, False otherwise.
+        """
+        return self._data_source.is_valid_state(state)
+
+    def normalize_state(self, state: str) -> str | None:
+        """Normalize a state name to its abbreviation.
+
+        Args:
+            state: State name or abbreviation.
+
+        Returns:
+            Two-letter state abbreviation if valid, None otherwise.
+        """
+        return self._data_source.normalize_state(state)
+
+    # -------------------------------------------------------------------------
+    # Pandas integration methods
+    # -------------------------------------------------------------------------
+
+    def to_series(
+        self,
+        address_string: str,
+        *,
+        validate: bool = True,
+        errors: str = "coerce",
+    ) -> "pd.Series":
+        """Parse an address and return a pandas Series.
+
+        Args:
+            address_string: Raw address string to parse.
+            validate: If True, validate the parsed address.
+            errors: How to handle errors ("raise" or "coerce").
+
+        Returns:
+            Series with address components as index.
+        """
+        import pandas as pd
+
+        result = self.parse(address_string, validate=validate)
+
+        if result.is_valid:
+            return pd.Series(result.to_dict())
+        elif errors == "raise":
+            if result.error:
+                raise result.error
+            raise ValueError("Validation failed")
+        else:
+            return pd.Series({field: None for field in ADDRESS_FIELDS})
+
+    def parse_dataframe(
+        self,
+        df: "pd.DataFrame",
+        address_column: str,
+        *,
+        validate: bool = True,
+        errors: str = "coerce",
+        prefix: str = "",
+        inplace: bool = False,
+    ) -> "pd.DataFrame":
+        """Parse addresses in a DataFrame.
+
+        Args:
+            df: Input DataFrame.
+            address_column: Name of column containing addresses.
+            validate: If True, validate parsed addresses.
+            errors: "coerce" (None for failures) or "raise".
+            prefix: Prefix for new column names.
+            inplace: If True, modify df in place.
+
+        Returns:
+            DataFrame with new address component columns.
+        """
+        import pandas as pd
+
+        if not inplace:
+            df = df.copy()
+
+        # Parse all addresses
+        parsed = df[address_column].apply(
+            lambda x: self.to_series(x, validate=validate, errors=errors)
+            if pd.notna(x) and x
+            else pd.Series({field: None for field in ADDRESS_FIELDS})
+        )
+
+        # Add prefix to column names
+        if prefix:
+            parsed.columns = [f"{prefix}{col}" for col in parsed.columns]
+
+        # Add columns to original DataFrame
+        for col in parsed.columns:
+            df[col] = parsed[col]
+
+        return df
+
+
+# Module-level convenience function
+_default_service: AddressService | None = None
+
+
+def get_default_service() -> AddressService:
+    """Get the default AddressService singleton.
+
+    Returns:
+        Shared AddressService instance with default configuration.
+    """
+    global _default_service
+    if _default_service is None:
+        _default_service = AddressService()
+    return _default_service
+
+
+def parse(address_string: str, *, validate: bool = True) -> ParseResult:
+    """Parse an address using the default service.
+
+    Convenience function for quick address parsing.
+
+    Args:
+        address_string: Raw address string to parse.
+        validate: If True, validate the parsed address.
+
+    Returns:
+        ParseResult containing the parsed address.
+    """
+    return get_default_service().parse(address_string, validate=validate)
+
