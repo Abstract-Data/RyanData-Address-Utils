@@ -131,18 +131,13 @@ class CSVDataSource(BaseDataSource):
         return self._state_names.copy()
 
 
-# Module-level singleton for backwards compatibility
-_default_source: CSVDataSource | None = None
-
-
 @lru_cache(maxsize=1)
 def get_default_csv_source() -> CSVDataSource:
     """Get the default CSV data source singleton.
 
+    Uses lru_cache to ensure only one instance is created.
+
     Returns:
         Shared CSVDataSource instance.
     """
-    global _default_source
-    if _default_source is None:
-        _default_source = CSVDataSource()
-    return _default_source
+    return CSVDataSource()
