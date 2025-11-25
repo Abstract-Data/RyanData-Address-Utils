@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Type
 
 from ryandata_address_utils.protocols import AddressParserProtocol
 
@@ -33,7 +33,7 @@ class ParserFactory:
     def register(
         cls,
         parser_type: str,
-        parser_class: type[AddressParserProtocol],
+        parser_class: Type[AddressParserProtocol],
     ) -> None:
         """Register a parser type.
 

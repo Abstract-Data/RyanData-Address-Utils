@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Type
 
 from ryandata_address_utils.protocols import DataSourceProtocol
 
@@ -34,7 +34,7 @@ class DataSourceFactory:
     def register(
         cls,
         source_type: str,
-        source_class: type[DataSourceProtocol],
+        source_class: Type[DataSourceProtocol],
     ) -> None:
         """Register a data source type.
 
