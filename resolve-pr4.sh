@@ -9,8 +9,13 @@ echo "Resolving conflicts in PR #4 (copilot/sub-pr-1-another-one)..."
 # Checkout the PR branch
 git checkout copilot/sub-pr-1-another-one
 
+# Reset to the original state before any merge attempts
+git reset --hard origin/copilot/sub-pr-1-another-one 2>/dev/null || git reset --hard HEAD
+
 # Merge the base branch
-git merge ci/add-github-workflows || true
+if ! git merge ci/add-github-workflows --no-commit --no-ff; then
+    echo "Merge conflict detected (expected). Resolving..."
+fi
 
 # Remove the conflicted ci.yml file
 git rm .github/workflows/ci.yml
