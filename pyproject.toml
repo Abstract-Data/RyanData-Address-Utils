@@ -72,6 +72,9 @@ line-length = 100
 select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.mypy]
+# Note: mypy 1.13.0+ requires python_version >= 3.9
+# The package supports Python 3.8+, but we use 3.9 for type checking
+# All files use 'from __future__ import annotations' for forward compatibility
 python_version = "3.9"
 warn_return_any = true
 warn_unused_ignores = true

@@ -3,9 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 
-from typing_extensions import Self
-
 from pydantic import BaseModel, ConfigDict, Field
+from typing_extensions import Self
 
 
 class AddressField(str, Enum):
