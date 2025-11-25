@@ -1,12 +1,12 @@
 # RyanData Address Utils
 
-[![CI](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/ci.yml/badge.svg)](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/ci.yml)
-[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](https://mypy-lang.org/)
+[![Tests](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/tests.yml/badge.svg)](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/tests.yml)
+[![Ruff](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/lint.yml/badge.svg)](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/lint.yml)
+[![Mypy](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/typecheck.yml/badge.svg)](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/typecheck.yml)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A production-ready Python address parser that uses `usaddress` to parse US addresses into structured Pydantic models with ZIP code and state validation. Features extensible architecture with Protocols, ABCs, and Factory patterns.
+A Python address parser built for Ryan Data that uses `usaddress` to parse US addresses into structured Pydantic models with ZIP code and state validation.
 
 ## Installation
 
@@ -47,7 +47,7 @@ result = service.parse("456 Oak Ave, Dallas TX 75201")
 - **Validate states** - abbreviations and full names
 - **Pandas integration** for batch processing
 - **Extensible architecture** - swap parsers, data sources, validators
-- **Builder pattern** for programmatic address construction
+- **Builder pattern** for programmatic address constructionYes
 
 ## Pandas Integration
 
@@ -63,7 +63,7 @@ df = pd.DataFrame({
 })
 
 service = AddressService()
-result = service.parse_dataframe(df, "address")
+result = service.parse_dataframe(df, "address") # <-- This is where your named address column goes, and then it'll parse and add the split cols to the dataframe
 print(result[["AddressNumber", "StreetName", "ZipCode"]])
 ```
 
