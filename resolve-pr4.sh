@@ -10,15 +10,41 @@ echo "Resolving conflicts in PR #4 (copilot/sub-pr-1-another-one)..."
 git checkout copilot/sub-pr-1-another-one
 
 # Reset to the original state before any merge attempts
-git reset --hard origin/copilot/sub-pr-1-another-one 2>/dev/null || git reset --hard HEAD
-
-# Merge the base branch
-if ! git merge ci/add-github-workflows --no-commit --no-ff; then
-    echo "Merge conflict detected (expected). Resolving..."
+echo "Resetting branch to clean state..."
+if git reset --hard origin/copilot/sub-pr-1-another-one 2>/dev/null; then
+    echo "Reset to origin/copilot/sub-pr-1-another-one"
+else
+    echo "Warning: Could not reset to origin, using current HEAD"
+    git reset --hard HEAD
 fi
 
-# Remove the conflicted ci.yml file
-git rm .github/workflows/ci.yml
+# Merge the base branch
+echo "Merging ci/add-github-workflows..."
+if ! git merge ci/add-github-workflows --no-commit --no-ff; then
+    echo "Merge conflicts detected (expected). Proceeding with resolution..."
+    
+    # Verify conflicts exist
+    CONFLICTS=$(git diff --name-only --diff-filter=U)
+    if [ -z "$CONFLICTS" ]; then
+        echo "Error: Expected conflicts but none found. Aborting."
+        git merge --abort 2>/dev/null || true
+        exit 1
+    fi
+    echo "Conflicted files: $CONFLICTS"
+else
+    echo "Error: Merge completed without conflicts. This is unexpected. Aborting."
+    git reset --hard HEAD~1
+    exit 1
+fi
+
+# Remove the conflicted ci.yml file if it exists
+echo "Removing conflicted ci.yml..."
+if [ -f .github/workflows/ci.yml ]; then
+    git rm .github/workflows/ci.yml
+else
+    # File might already be staged for deletion
+    git rm --cached .github/workflows/ci.yml 2>/dev/null || echo "ci.yml already removed"
+fi
 
 # Create the composite action directory
 mkdir -p .github/actions/setup-python-uv
