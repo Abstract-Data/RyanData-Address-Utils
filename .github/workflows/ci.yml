@@ -69,4 +69,3 @@ jobs:
 
       - name: Run tests
         run: uv run pytest tests/ -v --tb=short
-
