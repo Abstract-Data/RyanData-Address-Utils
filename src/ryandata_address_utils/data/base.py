@@ -25,9 +25,7 @@ class BaseDataSource(ABC):
     def _setup_cache(self) -> None:
         """Set up LRU cache for ZIP lookups."""
         # Create cached version of the lookup method
-        self._cached_get_zip_info = lru_cache(maxsize=self._cache_size)(
-            self._get_zip_info_impl
-        )
+        self._cached_get_zip_info = lru_cache(maxsize=self._cache_size)(self._get_zip_info_impl)
 
     @abstractmethod
     def _load_data(self) -> None:
@@ -140,4 +138,3 @@ class BaseDataSource(ABC):
     def clear_cache(self) -> None:
         """Clear the ZIP lookup cache."""
         self._cached_get_zip_info.cache_clear()
-

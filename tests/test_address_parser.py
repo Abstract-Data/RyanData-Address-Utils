@@ -1,11 +1,12 @@
+import contextlib
+
 import pytest
-from hypothesis import given, strategies as st, settings, HealthCheck
+from hypothesis import HealthCheck, given, settings
+from hypothesis import strategies as st
 
 from ryandata_address_utils import (
-    Address,
     AddressService,
     ParseResult,
-    get_city_state_from_zip,
     get_zip_info,
     is_valid_state,
     is_valid_zip,
@@ -13,7 +14,6 @@ from ryandata_address_utils import (
     parse,
 )
 from ryandata_address_utils.data import get_valid_state_abbrevs
-
 
 # =============================================================================
 # Test Data / Strategies
@@ -24,17 +24,60 @@ VALID_STATE_ABBREVS = list(get_valid_state_abbrevs())
 
 # State full names (subset for testing)
 STATE_NAMES = [
-    "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado",
-    "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho",
-    "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana",
-    "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota",
-    "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada",
-    "New Hampshire", "New Jersey", "New Mexico", "New York",
-    "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon",
-    "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota",
-    "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington",
-    "West Virginia", "Wisconsin", "Wyoming", "District of Columbia",
-    "Puerto Rico", "Guam", "Virgin Islands",
+    "Alabama",
+    "Alaska",
+    "Arizona",
+    "Arkansas",
+    "California",
+    "Colorado",
+    "Connecticut",
+    "Delaware",
+    "Florida",
+    "Georgia",
+    "Hawaii",
+    "Idaho",
+    "Illinois",
+    "Indiana",
+    "Iowa",
+    "Kansas",
+    "Kentucky",
+    "Louisiana",
+    "Maine",
+    "Maryland",
+    "Massachusetts",
+    "Michigan",
+    "Minnesota",
+    "Mississippi",
+    "Missouri",
+    "Montana",
+    "Nebraska",
+    "Nevada",
+    "New Hampshire",
+    "New Jersey",
+    "New Mexico",
+    "New York",
+    "North Carolina",
+    "North Dakota",
+    "Ohio",
+    "Oklahoma",
+    "Oregon",
+    "Pennsylvania",
+    "Rhode Island",
+    "South Carolina",
+    "South Dakota",
+    "Tennessee",
+    "Texas",
+    "Utah",
+    "Vermont",
+    "Virginia",
+    "Washington",
+    "West Virginia",
+    "Wisconsin",
+    "Wyoming",
+    "District of Columbia",
+    "Puerto Rico",
+    "Guam",
+    "Virgin Islands",
 ]
 
 # Known valid ZIP codes for testing (verified to exist in uszips.csv)
@@ -50,14 +93,35 @@ VALID_ZIPS = [
 
 # Street types
 STREET_TYPES = [
-    "St", "Street", "Ave", "Avenue", "Blvd", "Boulevard", "Dr", "Drive",
-    "Ln", "Lane", "Rd", "Road", "Ct", "Court", "Pl", "Place", "Way",
-    "Cir", "Circle", "Pkwy", "Parkway", "Ter", "Terrace", "Hwy", "Highway",
+    "St",
+    "Street",
+    "Ave",
+    "Avenue",
+    "Blvd",
+    "Boulevard",
+    "Dr",
+    "Drive",
+    "Ln",
+    "Lane",
+    "Rd",
+    "Road",
+    "Ct",
+    "Court",
+    "Pl",
+    "Place",
+    "Way",
+    "Cir",
+    "Circle",
+    "Pkwy",
+    "Parkway",
+    "Ter",
+    "Terrace",
+    "Hwy",
+    "Highway",
 ]
 
 # Directionals
-DIRECTIONALS = ["N", "S", "E", "W", "NE", "NW", "SE", "SW", 
-                "North", "South", "East", "West"]
+DIRECTIONALS = ["N", "S", "E", "W", "NE", "NW", "SE", "SW", "North", "South", "East", "West"]
 
 # Unit types
 UNIT_TYPES = ["Apt", "Apt.", "Suite", "Ste", "Ste.", "Unit", "#", "Floor", "Fl"]
@@ -66,6 +130,7 @@ UNIT_TYPES = ["Apt", "Apt.", "Suite", "Ste", "Ste.", "Unit", "#", "Floor", "Fl"]
 # =============================================================================
 # Hypothesis Strategies
 # =============================================================================
+
 
 @st.composite
 def valid_zip_strategy(draw: st.DrawFn) -> str:
@@ -112,23 +177,61 @@ def street_name_strategy(draw: st.DrawFn) -> str:
     choice = draw(st.integers(min_value=0, max_value=3))
     if choice == 0:
         # Simple name
-        return draw(st.sampled_from([
-            "Main", "Oak", "Elm", "Maple", "Cedar", "Pine", "First", "Second",
-            "Park", "Washington", "Lincoln", "Jefferson", "Martin Luther King",
-        ]))
+        return draw(
+            st.sampled_from(
+                [
+                    "Main",
+                    "Oak",
+                    "Elm",
+                    "Maple",
+                    "Cedar",
+                    "Pine",
+                    "First",
+                    "Second",
+                    "Park",
+                    "Washington",
+                    "Lincoln",
+                    "Jefferson",
+                    "Martin Luther King",
+                ]
+            )
+        )
     elif choice == 1:
         # Numbered street
-        ordinal = draw(st.sampled_from([
-            "1st", "2nd", "3rd", "4th", "5th", "10th", "21st", "22nd", "23rd",
-            "42nd", "100th", "101st",
-        ]))
+        ordinal = draw(
+            st.sampled_from(
+                [
+                    "1st",
+                    "2nd",
+                    "3rd",
+                    "4th",
+                    "5th",
+                    "10th",
+                    "21st",
+                    "22nd",
+                    "23rd",
+                    "42nd",
+                    "100th",
+                    "101st",
+                ]
+            )
+        )
         return ordinal
     elif choice == 2:
         # Multi-word name
-        return draw(st.sampled_from([
-            "Martin Luther King Jr", "John F Kennedy", "Ben Franklin",
-            "Old Mill", "New Hope", "Rolling Hills", "Shady Grove",
-        ]))
+        return draw(
+            st.sampled_from(
+                [
+                    "Martin Luther King Jr",
+                    "John F Kennedy",
+                    "Ben Franklin",
+                    "Old Mill",
+                    "New Hope",
+                    "Rolling Hills",
+                    "Shady Grove",
+                ]
+            )
+        )
     else:
         # Highway/Route
         num = draw(st.integers(min_value=1, max_value=999))
@@ -140,46 +243,59 @@ def street_name_strategy(draw: st.DrawFn) -> str:
 def full_address_strategy(draw: st.DrawFn) -> str:
     """Generate complete addresses."""
     parts = []
-    
+
     # Street number
     parts.append(draw(street_number_strategy()))
-    
+
     # Optional directional
     if draw(st.booleans()):
         parts.append(draw(st.sampled_from(DIRECTIONALS)))
-    
+
     # Street name
     parts.append(draw(street_name_strategy()))
-    
+
     # Street type
     parts.append(draw(st.sampled_from(STREET_TYPES)))
-    
+
     # Optional unit
     if draw(st.booleans()):
         unit_type = draw(st.sampled_from(UNIT_TYPES))
         unit_num = draw(st.integers(min_value=1, max_value=999))
         parts.append(f"{unit_type} {unit_num}")
-    
+
     # City
-    city = draw(st.sampled_from([
-        "Austin", "New York", "Los Angeles", "Chicago", "Houston",
-        "Phoenix", "San Antonio", "San Diego", "Dallas", "San Jose",
-    ]))
+    city = draw(
+        st.sampled_from(
+            [
+                "Austin",
+                "New York",
+                "Los Angeles",
+                "Chicago",
+                "Houston",
+                "Phoenix",
+                "San Antonio",
+                "San Diego",
+                "Dallas",
+                "San Jose",
+            ]
+        )
+    )
     parts.append(city)
-    
+
     # State
     state = draw(st.sampled_from(VALID_STATE_ABBREVS[:50]))  # Limit to common states
     parts.append(state)
-    
+
     # ZIP
     parts.append(draw(st.sampled_from(VALID_ZIPS)))
-    
+
     return " ".join(parts)
 
 
 # =============================================================================
 # Basic Property Tests
 # =============================================================================
+
 
 class TestBasicProperties:
     """Test basic properties that should always hold."""
@@ -220,6 +336,7 @@ class TestBasicProperties:
 # =============================================================================
 # ZIP Code Edge Cases
 # =============================================================================
+
 
 class TestZipCodeEdgeCases:
     """Test ZIP code edge cases."""
@@ -269,6 +386,7 @@ class TestZipCodeEdgeCases:
 # State Edge Cases
 # =============================================================================
 
+
 class TestStateEdgeCases:
     """Test state name/abbreviation edge cases."""
 
@@ -304,27 +422,28 @@ class TestStateEdgeCases:
 # Address Parsing Edge Cases
 # =============================================================================
 
+
 class TestAddressParsingEdgeCases:
     """Test various unusual but valid address formats."""
 
-    @pytest.mark.parametrize("address,expected_field,expected_value", [
-        # Basic addresses
-        ("123 Main St, Austin TX 78749", "AddressNumber", "123"),
-        ("456 Oak Ave, New York NY 10001", "StreetName", "Oak"),
-        
-        # Directionals
-        ("100 N Main St, Austin TX 78749", "StreetNamePreDirectional", "N"),
-        ("200 Main St S, Austin TX 78749", "StreetNamePostDirectional", "S"),
-        ("300 NE Oak Ave, Austin TX 78749", "StreetNamePreDirectional", "NE"),
-        
-        # Unit numbers
-        ("400 Main St Apt 5, Austin TX 78749", "OccupancyIdentifier", "5"),
-        ("500 Main St Suite 100, Austin TX 78749", "OccupancyIdentifier", "100"),
-        
-        # PO Box
-        ("PO Box 1234, Austin TX 78749", "USPSBoxID", "1234"),
-        ("P.O. Box 5678, Austin TX 78749", "USPSBoxID", "5678"),
-    ])
+    @pytest.mark.parametrize(
+        "address,expected_field,expected_value",
+        [
+            # Basic addresses
+            ("123 Main St, Austin TX 78749", "AddressNumber", "123"),
+            ("456 Oak Ave, New York NY 10001", "StreetName", "Oak"),
+            # Directionals
+            ("100 N Main St, Austin TX 78749", "StreetNamePreDirectional", "N"),
+            ("200 Main St S, Austin TX 78749", "StreetNamePostDirectional", "S"),
+            ("300 NE Oak Ave, Austin TX 78749", "StreetNamePreDirectional", "NE"),
+            # Unit numbers
+            ("400 Main St Apt 5, Austin TX 78749", "OccupancyIdentifier", "5"),
+            ("500 Main St Suite 100, Austin TX 78749", "OccupancyIdentifier", "100"),
+            # PO Box
+            ("PO Box 1234, Austin TX 78749", "USPSBoxID", "1234"),
+            ("P.O. Box 5678, Austin TX 78749", "USPSBoxID", "5678"),
+        ],
+    )
     def test_specific_address_formats(
         self, address: str, expected_field: str, expected_value: str
     ) -> None:
@@ -362,6 +481,7 @@ class TestAddressParsingEdgeCases:
 # =============================================================================
 # Fuzzing Tests
 # =============================================================================
+
 
 class TestFuzzing:
     """Fuzz testing to ensure parser doesn't crash on unexpected input."""
@@ -416,25 +536,27 @@ class TestFuzzing:
         except Exception as e:
             pytest.fail(f"Unexpected exception: {type(e).__name__}: {e}")
 
-    @pytest.mark.parametrize("special", [
-        "!@#$%^&*()",
-        "<script>alert('xss')</script>",
-        "'; DROP TABLE addresses; --",
-        "\x00\x01\x02",  # Null bytes
-        "\\n\\t\\r",
-        "123 Main St\n\nAustin TX 78749",
-    ])
+    @pytest.mark.parametrize(
+        "special",
+        [
+            "!@#$%^&*()",
+            "<script>alert('xss')</script>",
+            "'; DROP TABLE addresses; --",
+            "\x00\x01\x02",  # Null bytes
+            "\\n\\t\\r",
+            "123 Main St\n\nAustin TX 78749",
+        ],
+    )
     def test_special_characters(self, special: str) -> None:
         """Special characters should not crash the parser."""
-        try:
+        with contextlib.suppress(ValueError):
             parse(special, validate=False)
-        except ValueError:
-            pass
 
 
 # =============================================================================
 # Generated Address Tests
 # =============================================================================
+
 
 class TestGeneratedAddresses:
     """Test with generated address combinations."""
@@ -478,6 +600,7 @@ class TestGeneratedAddresses:
 # Validation Toggle Tests
 # =============================================================================
 
+
 class TestValidationToggle:
     """Test the validate parameter."""
 
@@ -508,6 +631,7 @@ class TestValidationToggle:
 # =============================================================================
 # AddressService Tests
 # =============================================================================
+
 
 class TestAddressService:
     """Test the AddressService facade."""

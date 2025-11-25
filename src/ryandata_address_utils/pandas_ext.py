@@ -23,16 +23,16 @@ class AddressParserAccessor:
         >>> df["address"].addr.parse()
     """
 
-    def __init__(self, pandas_obj: "pd.Series") -> None:
+    def __init__(self, pandas_obj: pd.Series) -> None:
         """Initialize the accessor.
 
         Args:
             pandas_obj: The pandas Series this accessor is attached to.
         """
         self._obj = pandas_obj
-        self._service: "AddressService | None" = None
+        self._service: AddressService | None = None
 
-    def _get_service(self) -> "AddressService":
+    def _get_service(self) -> AddressService:
         """Get or create the AddressService instance."""
         if self._service is None:
             from ryandata_address_utils.service import AddressService
@@ -45,8 +45,8 @@ class AddressParserAccessor:
         *,
         validate: bool = True,
         errors: str = "coerce",
-        service: "AddressService | None" = None,
-    ) -> "pd.DataFrame":
+        service: AddressService | None = None,
+    ) -> pd.DataFrame:
         """Parse addresses in the Series.
 
         Args:
@@ -67,7 +67,7 @@ class AddressParserAccessor:
             else pd.Series({field: None for field in ADDRESS_FIELDS})
         )
 
-        return parsed_data  # type: ignore
+        return parsed_data
 
 
 def register_accessor(name: str = "addr") -> None:
@@ -121,13 +121,13 @@ def parse_address_to_dict(
 
 
 def parse_addresses(
-    df: "pd.DataFrame",
+    df: pd.DataFrame,
     address_column: str,
     validate: bool = True,
     errors: str = "coerce",
     prefix: str = "",
     inplace: bool = False,
-) -> "pd.DataFrame":
+) -> pd.DataFrame:
     """Parse addresses in a DataFrame and add columns for each component.
 
     Note: Prefer using AddressService.parse_dataframe() instead.
@@ -157,10 +157,10 @@ def parse_addresses(
 
 
 def parse_address_series(
-    series: "pd.Series",
+    series: pd.Series,
     validate: bool = True,
     errors: str = "coerce",
-) -> "pd.DataFrame":
+) -> pd.DataFrame:
     """Parse a Series of addresses and return a DataFrame.
 
     Note: Prefer using series.addr.parse() after registering the accessor.
@@ -185,5 +185,4 @@ def parse_address_series(
         else pd.Series({field: None for field in ADDRESS_FIELDS})
     )
 
-    return parsed_data  # type: ignore
-
+    return parsed_data

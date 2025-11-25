@@ -47,10 +47,7 @@ class CSVDataSource(BaseDataSource):
 
         # Use bundled CSV file
         data_file = resources.files("ryandata_address_utils.data").joinpath("uszips.csv")
-        # For traversable resources, we need to handle both Path and Traversable
-        if hasattr(data_file, "__fspath__"):
-            return Path(data_file)
-        # For older Python or when running from zip, use as_file
+        # Convert Traversable to Path via string representation
         return Path(str(data_file))
 
     def _iter_csv_rows(self) -> Iterator[dict[str, str]]:
@@ -149,4 +146,3 @@ def get_default_csv_source() -> CSVDataSource:
     if _default_source is None:
         _default_source = CSVDataSource()
     return _default_source
-

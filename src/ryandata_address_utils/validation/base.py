@@ -29,4 +29,3 @@ class BaseValidator(ABC):
             ValidationResult containing validation status and any errors.
         """
         ...
-

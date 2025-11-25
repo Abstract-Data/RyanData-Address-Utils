@@ -37,4 +37,3 @@ class USAddressParser(BaseAddressParser):
 
         # Convert OrderedDict to regular dict and create Address
         return Address.model_construct(**dict(parsed_address))
-

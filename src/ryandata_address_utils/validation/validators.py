@@ -81,7 +81,7 @@ class StateValidator(BaseValidator):
     Validates that state values are valid US states.
     """
 
-    def __init__(self, data_source: "DataSourceProtocol") -> None:
+    def __init__(self, data_source: DataSourceProtocol) -> None:
         """Initialize state validator.
 
         Args:
@@ -185,7 +185,7 @@ class CompositeValidator(BaseValidator):
 
 
 def create_default_validators(
-    data_source: "DataSourceProtocol",
+    data_source: DataSourceProtocol,
     check_state_match: bool = False,
 ) -> CompositeValidator:
     """Create default set of validators.
@@ -197,8 +197,9 @@ def create_default_validators(
     Returns:
         CompositeValidator with default validators configured.
     """
-    return CompositeValidator([
-        ZipCodeValidator(data_source, check_state_match=check_state_match),
-        StateValidator(data_source),
-    ])
-
+    return CompositeValidator(
+        [
+            ZipCodeValidator(data_source, check_state_match=check_state_match),
+            StateValidator(data_source),
+        ]
+    )

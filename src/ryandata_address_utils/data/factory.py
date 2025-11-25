@@ -76,12 +76,11 @@ class DataSourceFactory:
         if source_type not in cls._registry:
             available = ", ".join(sorted(cls._registry.keys()))
             raise ValueError(
-                f"Unknown data source type: {source_type}. "
-                f"Available types: {available}"
+                f"Unknown data source type: {source_type}. Available types: {available}"
             )
 
         source_class = cls._registry[source_type]
-        return source_class(**kwargs)
+        return source_class(**kwargs)  # type: ignore[no-any-return]
 
     @classmethod
     def available_types(cls) -> list[str]:
@@ -97,4 +96,3 @@ class DataSourceFactory:
     def clear_registry(cls) -> None:
         """Clear the registry (mainly for testing)."""
         cls._registry.clear()
-

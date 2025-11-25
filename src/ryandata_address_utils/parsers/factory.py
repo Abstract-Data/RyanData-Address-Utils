@@ -74,13 +74,10 @@ class ParserFactory:
 
         if parser_type not in cls._registry:
             available = ", ".join(sorted(cls._registry.keys()))
-            raise ValueError(
-                f"Unknown parser type: {parser_type}. "
-                f"Available types: {available}"
-            )
+            raise ValueError(f"Unknown parser type: {parser_type}. Available types: {available}")
 
         parser_class = cls._registry[parser_type]
-        return parser_class(**kwargs)
+        return parser_class(**kwargs)  # type: ignore[no-any-return]
 
     @classmethod
     def available_types(cls) -> list[str]:
@@ -96,4 +93,3 @@ class ParserFactory:
     def clear_registry(cls) -> None:
         """Clear the registry (mainly for testing)."""
         cls._registry.clear()
-

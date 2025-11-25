@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Sequence
+from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 from ryandata_address_utils.data import DataSourceFactory
 from ryandata_address_utils.models import ADDRESS_FIELDS, ParseResult, ZipInfo
@@ -10,7 +11,6 @@ from ryandata_address_utils.validation.validators import create_default_validato
 if TYPE_CHECKING:
     import pandas as pd
 
-    from ryandata_address_utils.models import Address
     from ryandata_address_utils.protocols import (
         AddressParserProtocol,
         DataSourceProtocol,
@@ -39,9 +39,9 @@ class AddressService:
 
     def __init__(
         self,
-        parser: "AddressParserProtocol | None" = None,
-        data_source: "DataSourceProtocol | None" = None,
-        validator: "ValidatorProtocol | None" = None,
+        parser: AddressParserProtocol | None = None,
+        data_source: DataSourceProtocol | None = None,
+        validator: ValidatorProtocol | None = None,
         check_state_match: bool = False,
     ) -> None:
         """Initialize the address service.
@@ -64,17 +64,17 @@ class AddressService:
             )
 
     @property
-    def parser(self) -> "AddressParserProtocol":
+    def parser(self) -> AddressParserProtocol:
         """Get the parser instance."""
         return self._parser
 
     @property
-    def data_source(self) -> "DataSourceProtocol":
+    def data_source(self) -> DataSourceProtocol:
         """Get the data source instance."""
         return self._data_source
 
     @property
-    def validator(self) -> "ValidatorProtocol":
+    def validator(self) -> ValidatorProtocol:
         """Get the validator instance."""
         return self._validator
 
@@ -228,7 +228,7 @@ class AddressService:
         *,
         validate: bool = True,
         errors: str = "coerce",
-    ) -> "pd.Series":
+    ) -> pd.Series:
         """Parse an address and return a pandas Series.
 
         Args:
@@ -254,14 +254,14 @@ class AddressService:
 
     def parse_dataframe(
         self,
-        df: "pd.DataFrame",
+        df: pd.DataFrame,
         address_column: str,
         *,
         validate: bool = True,
         errors: str = "coerce",
         prefix: str = "",
         inplace: bool = False,
-    ) -> "pd.DataFrame":
+    ) -> pd.DataFrame:
         """Parse addresses in a DataFrame.
 
         Args:
@@ -327,4 +327,3 @@ def parse(address_string: str, *, validate: bool = True) -> ParseResult:
         ParseResult containing the parsed address.
     """
     return get_default_service().parse(address_string, validate=validate)
-

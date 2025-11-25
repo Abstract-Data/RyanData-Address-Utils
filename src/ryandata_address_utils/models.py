@@ -117,9 +117,7 @@ class Address(BaseModel):
     USPSBoxType: str | None = Field(
         default=None, description="The type of post office box (e.g. 'PO Box')"
     )
-    USPSBoxID: str | None = Field(
-        default=None, description="The identifier/number for the PO Box"
-    )
+    USPSBoxID: str | None = Field(default=None, description="The identifier/number for the PO Box")
     USPSBoxGroupType: str | None = Field(
         default=None, description="The group type for the PO Box (if present)"
     )
@@ -129,9 +127,7 @@ class Address(BaseModel):
     IntersectionSeparator: str | None = Field(
         default=None, description="The separator for intersections (e.g. '&' or 'and')"
     )
-    Recipient: str | None = Field(
-        default=None, description="The recipient or addressee's name"
-    )
+    Recipient: str | None = Field(default=None, description="The recipient or addressee's name")
     NotAddress: str | None = Field(
         default=None, description="Text identified as not part of an address"
     )
@@ -173,7 +169,7 @@ class ValidationResult:
         self.errors.append(ValidationError(field=field, message=message, value=value))
         self.is_valid = False
 
-    def merge(self, other: "ValidationResult") -> "ValidationResult":
+    def merge(self, other: ValidationResult) -> ValidationResult:
         """Merge another validation result into this one."""
         if not other.is_valid:
             self.is_valid = False
@@ -337,7 +333,7 @@ class AddressBuilder:
         Returns:
             Constructed Address object.
         """
-        return Address.model_construct(**self._data)
+        return Address.model_construct(_fields_set=None, **self._data)
 
     def build_validated(self) -> Address:
         """Build the Address object with Pydantic validation.
@@ -354,4 +350,3 @@ class AddressBuilder:
         """Reset the builder to empty state."""
         self._data = {}
         return self
-

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol, Sequence, runtime_checkable
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
     from ryandata_address_utils.models import Address, ParseResult, ValidationResult, ZipInfo
@@ -14,7 +15,7 @@ class AddressParserProtocol(Protocol):
     Address objects, handling errors gracefully.
     """
 
-    def parse(self, address_string: str) -> "ParseResult":
+    def parse(self, address_string: str) -> ParseResult:
         """Parse a single address string.
 
         Args:
@@ -25,7 +26,7 @@ class AddressParserProtocol(Protocol):
         """
         ...
 
-    def parse_batch(self, addresses: Sequence[str]) -> list["ParseResult"]:
+    def parse_batch(self, addresses: Sequence[str]) -> list[ParseResult]:
         """Parse multiple address strings.
 
         Args:
@@ -45,7 +46,7 @@ class DataSourceProtocol(Protocol):
     supporting different backends (CSV, database, API, etc.).
     """
 
-    def get_zip_info(self, zip_code: str) -> "ZipInfo | None":
+    def get_zip_info(self, zip_code: str) -> ZipInfo | None:
         """Get information about a ZIP code.
 
         Args:
@@ -106,7 +107,7 @@ class ValidatorProtocol(Protocol):
     (ZIP codes, states, etc.) and return validation results.
     """
 
-    def validate(self, address: "Address") -> "ValidationResult":
+    def validate(self, address: Address) -> ValidationResult:
         """Validate an address.
 
         Args:
@@ -121,4 +122,3 @@ class ValidatorProtocol(Protocol):
     def name(self) -> str:
         """Name of this validator for error reporting."""
         ...
-

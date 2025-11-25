@@ -102,4 +102,3 @@ class BaseAddressParser(ABC):
         """Reset parsing statistics."""
         self._parse_count = 0
         self._error_count = 0
-
