@@ -38,6 +38,8 @@ Quick Start:
     ... )
 """
 
+from __future__ import annotations
+
 # Imports grouped by type and sorted
 from ryandata_address_utils.data import (
     BaseDataSource,

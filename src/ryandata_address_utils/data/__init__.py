@@ -4,6 +4,8 @@ This module provides data source implementations and utilities
 for geographic validation data.
 """
 
+from __future__ import annotations
+
 from ryandata_address_utils.data.base import BaseDataSource
 from ryandata_address_utils.data.csv_source import CSVDataSource, get_default_csv_source
 from ryandata_address_utils.data.factory import DataSourceFactory

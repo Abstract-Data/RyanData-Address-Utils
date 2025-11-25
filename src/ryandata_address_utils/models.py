@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Self
+
+from typing_extensions import Self
 
 from pydantic import BaseModel, ConfigDict, Field
 

@@ -26,6 +26,7 @@ requires-python = ">=3.8"
 dependencies = [
     "pydantic>=2.0.0",
     "usaddress>=0.5.16",
+    "typing-extensions>=4.0.0",
 ]
 
 [project.optional-dependencies]
@@ -71,7 +72,7 @@ line-length = 100
 select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.9"
 warn_return_any = true
 warn_unused_ignores = true
 disallow_untyped_defs = true
