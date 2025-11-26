@@ -69,6 +69,10 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = [
+    "UP007",  # Use X | Y - not compatible with Pydantic on Python 3.9
+    "UP045",  # Use X | None - not compatible with Pydantic on Python 3.9
+]
 
 [tool.mypy]
 # Note: mypy 1.13.0+ requires python_version >= 3.9

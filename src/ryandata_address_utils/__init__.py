@@ -40,6 +40,8 @@ Quick Start:
 
 from __future__ import annotations
 
+from typing import Optional
+
 # Imports grouped by type and sorted
 from ryandata_address_utils.data import (
     BaseDataSource,
@@ -129,7 +131,7 @@ __all__ = [
 ]
 
 
-def get_city_state_from_zip(zip_code: str) -> tuple[str, str] | None:
+def get_city_state_from_zip(zip_code: str) -> Optional[tuple[str, str]]:
     """Look up city and state from a ZIP code.
 
     Args:

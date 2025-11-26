@@ -5,6 +5,7 @@ from collections.abc import Iterator
 from functools import lru_cache
 from importlib import resources
 from pathlib import Path
+from typing import Optional, Union
 
 from ryandata_address_utils.data.base import BaseDataSource
 from ryandata_address_utils.models import ZipInfo
@@ -19,7 +20,7 @@ class CSVDataSource(BaseDataSource):
 
     def __init__(
         self,
-        csv_path: str | Path | None = None,
+        csv_path: Optional[Union[str, Path]] = None,
         cache_size: int = 10000,
     ) -> None:
         """Initialize CSV data source.
@@ -100,7 +101,7 @@ class CSVDataSource(BaseDataSource):
         if not self._loaded:
             self._load_data()
 
-    def _get_zip_info_impl(self, zip_code: str) -> ZipInfo | None:
+    def _get_zip_info_impl(self, zip_code: str) -> Optional[ZipInfo]:
         """Get ZIP info from the loaded data.
 
         Args:
