@@ -13,14 +13,19 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Text Processing",
     "Typing :: Typed",
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.9,<=3.13"
 dependencies = [
     "pydantic>=2.0.0",
     "usaddress>=0.5.16",
+    "typing-extensions>=4.0.0",
 ]
 
 [project.optional-dependencies]
@@ -59,14 +64,21 @@ include = [
 ]
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py38"
 line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = [
+    "UP007",  # Use X | Y - not compatible with Pydantic on Python 3.9
+    "UP045",  # Use X | None - not compatible with Pydantic on Python 3.9
+]
 
 [tool.mypy]
-python_version = "3.12"
+# Note: mypy 1.13.0+ requires python_version >= 3.9
+# The package supports Python 3.8+, but we use 3.9 for type checking
+# All files use 'from __future__ import annotations' for forward compatibility
+python_version = "3.9"
 warn_return_any = true
 warn_unused_ignores = true
 disallow_untyped_defs = true

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from ryandata_address_utils.data import DataSourceFactory
 from ryandata_address_utils.models import ADDRESS_FIELDS, ParseResult, ZipInfo
@@ -39,9 +39,9 @@ class AddressService:
 
     def __init__(
         self,
-        parser: AddressParserProtocol | None = None,
-        data_source: DataSourceProtocol | None = None,
-        validator: ValidatorProtocol | None = None,
+        parser: Optional[AddressParserProtocol] = None,
+        data_source: Optional[DataSourceProtocol] = None,
+        validator: Optional[ValidatorProtocol] = None,
         check_state_match: bool = False,
     ) -> None:
         """Initialize the address service.
@@ -131,7 +131,7 @@ class AddressService:
         *,
         validate: bool = True,
         errors: str = "raise",
-    ) -> dict[str, str | None]:
+    ) -> dict[str, Optional[str]]:
         """Parse an address and return a dictionary.
 
         Args:
@@ -160,7 +160,7 @@ class AddressService:
 
         return result.to_dict()
 
-    def lookup_zip(self, zip_code: str) -> ZipInfo | None:
+    def lookup_zip(self, zip_code: str) -> Optional[ZipInfo]:
         """Look up information about a ZIP code.
 
         Args:
@@ -171,7 +171,7 @@ class AddressService:
         """
         return self._data_source.get_zip_info(zip_code)
 
-    def get_city_state_from_zip(self, zip_code: str) -> tuple[str, str] | None:
+    def get_city_state_from_zip(self, zip_code: str) -> Optional[tuple[str, str]]:
         """Look up city and state from a ZIP code.
 
         Args:
@@ -207,7 +207,7 @@ class AddressService:
         """
         return self._data_source.is_valid_state(state)
 
-    def normalize_state(self, state: str) -> str | None:
+    def normalize_state(self, state: str) -> Optional[str]:
         """Normalize a state name to its abbreviation.
 
         Args:
@@ -299,7 +299,7 @@ class AddressService:
 
 
 # Module-level convenience function
-_default_service: AddressService | None = None
+_default_service: Optional[AddressService] = None
 
 
 def get_default_service() -> AddressService:
