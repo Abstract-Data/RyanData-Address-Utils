@@ -40,14 +40,21 @@ Quick Start:
 
 from __future__ import annotations
 
-from importlib.metadata import PackageNotFoundError, version
 from typing import Optional
 
 # Dynamic version from package metadata
+# Use a more robust approach that doesn't fail on import
 try:
-    __version__ = version("ryandata-address-utils")
-except PackageNotFoundError:
-    # Package is not installed in editable mode or not installed at all
+    from importlib.metadata import PackageNotFoundError, version
+
+    try:
+        __version__ = version("ryandata-address-utils")
+    except (PackageNotFoundError, Exception):
+        # Package is not installed, or metadata unavailable
+        # Fall back to hardcoded version
+        __version__ = "0.2.0"
+except ImportError:
+    # Python < 3.8 fallback (though we require 3.9+, this is defensive)
     __version__ = "0.2.0"
 
 __package_name__ = "ryandata-address-utils"
