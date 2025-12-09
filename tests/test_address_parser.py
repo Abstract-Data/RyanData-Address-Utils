@@ -513,16 +513,32 @@ class TestFuzzing:
         """Empty string should not crash (may return empty Address or raise)."""
         result = parse("", validate=False)
         if result.is_parsed:
-            # If it succeeds, all fields should be None
-            assert all(v is None for v in result.to_dict().values())
+            # If it succeeds, address component fields should be None
+            # Note: Address1, Address2, FullAddress are computed fields
+            addr_dict = result.to_dict()
+            # Check that main address fields are None (excluding computed fields)
+            main_fields = {
+                k: v
+                for k, v in addr_dict.items()
+                if k not in ("Address1", "Address2", "FullAddress")
+            }
+            assert all(v is None for v in main_fields.values())
         # If not valid, that's also acceptable
 
     def test_whitespace_only(self) -> None:
         """Whitespace-only string should not crash."""
         result = parse("   \t\n  ", validate=False)
         if result.is_parsed:
-            # If it succeeds, all fields should be None
-            assert all(v is None for v in result.to_dict().values())
+            # If it succeeds, address component fields should be None
+            # Note: Address1, Address2, FullAddress are computed fields
+            addr_dict = result.to_dict()
+            # Check that main address fields are None (excluding computed fields)
+            main_fields = {
+                k: v
+                for k, v in addr_dict.items()
+                if k not in ("Address1", "Address2", "FullAddress")
+            }
+            assert all(v is None for v in main_fields.values())
         # If not valid, that's also acceptable
 
     @given(st.text(min_size=1000, max_size=5000))
