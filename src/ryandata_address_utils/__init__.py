@@ -40,7 +40,22 @@ Quick Start:
 
 from __future__ import annotations
 
+import sys
 from typing import Optional
+
+# Dynamic version from package metadata
+if sys.version_info >= (3, 8):
+    from importlib.metadata import version, PackageNotFoundError
+else:
+    from importlib_metadata import version, PackageNotFoundError
+
+try:
+    __version__ = version("ryandata-address-utils")
+except PackageNotFoundError:
+    # Package is not installed in editable mode or not installed at all
+    __version__ = "0.2.0"
+
+__package_name__ = "ryandata-address-utils"
 
 # Imports grouped by type and sorted
 from ryandata_address_utils.data import (
@@ -81,9 +96,6 @@ from ryandata_address_utils.validation import (
     StateValidator,
     ZipCodeValidator,
 )
-
-__version__ = "0.2.0"
-__package_name__ = "ryandata-address-utils"
 
 __all__ = [
     # Version

@@ -10,15 +10,37 @@ A Python address parser built for Ryan Data that uses `usaddress` to parse US ad
 
 ## Installation
 
+Install the latest development version:
+
 ```bash
-pip install git+https://github.com/Abstract-Data/RyanData-Address-Utils.git
+uv add git+https://github.com/Abstract-Data/RyanData-Address-Utils.git
+```
+
+Install a specific version (recommended for production):
+
+```bash
+# Install a specific release version
+uv add git+https://github.com/Abstract-Data/RyanData-Address-Utils.git@v0.2.0
+
+# Install latest from main branch
+uv add git+https://github.com/Abstract-Data/RyanData-Address-Utils.git@main
 ```
 
 With pandas support:
 
 ```bash
-pip install "ryandata-address-utils[pandas] @ git+https://github.com/Abstract-Data/RyanData-Address-Utils.git"
+uv add "git+https://github.com/Abstract-Data/RyanData-Address-Utils.git[pandas]"
 ```
+
+For specific version with pandas:
+
+```bash
+uv add "git+https://github.com/Abstract-Data/RyanData-Address-Utils.git@v0.2.0[pandas]"
+```
+
+### Available Releases
+
+See [GitHub Releases](https://github.com/Abstract-Data/RyanData-Address-Utils/releases) for all available versions and changelog.
 
 ## Quick Start
 
@@ -196,6 +218,28 @@ make test
 # Run linter
 make lint
 ```
+
+## Versioning
+
+This project follows [Semantic Versioning](https://semver.org/). Version bumps are automated based on [Conventional Commits](https://www.conventionalcommits.org/):
+
+- `feat:` commits trigger a minor version bump
+- `fix:` commits trigger a patch version bump
+- `BREAKING CHANGE:` in commit footer triggers a major version bump
+- `chore:`, `docs:`, `refactor:` commits don't trigger version bumps
+
+### Release Process
+
+1. Commits following conventional commits are pushed to `main`
+2. GitHub Actions automatically:
+   - Detects version bump requirements
+   - Updates version in `pyproject.toml`
+   - Creates git tag (e.g., `v0.2.1`)
+   - Builds distribution packages (wheel + sdist)
+   - Creates GitHub release with changelog
+   - Uploads artifacts
+
+See [GitHub Actions Releases](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/release.yml) to view release automation.
 
 ## License
 
