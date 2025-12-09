@@ -18,9 +18,7 @@ class USAddressParser(BaseAddressParser):
         """Name of this parser implementation."""
         return "usaddress"
 
-    def _merge_consecutive_labels(
-        self, tokens: list[tuple[str, str]]
-    ) -> dict[str, str | None]:
+    def _merge_consecutive_labels(self, tokens: list[tuple[str, str]]) -> dict[str, str | None]:
         """Merge consecutive tokens with the same label.
 
         Args:
