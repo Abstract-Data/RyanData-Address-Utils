@@ -18,6 +18,41 @@ class USAddressParser(BaseAddressParser):
         """Name of this parser implementation."""
         return "usaddress"
 
+    def _merge_consecutive_labels(
+        self, tokens: list[tuple[str, str]]
+    ) -> dict[str, str]:
+        """Merge consecutive tokens with the same label.
+
+        Args:
+            tokens: List of (value, label) tuples from usaddress.parse().
+
+        Returns:
+            Dictionary mapping labels to merged string values.
+        """
+        if not tokens:
+            return {}
+
+        result = {}
+        current_label = None
+        current_values = []
+
+        for value, label in tokens:
+            if label == current_label:
+                current_values.append(value)
+            else:
+                if current_label is not None:
+                    merged_value = " ".join(current_values).rstrip(",")
+                    result[current_label] = merged_value
+                current_label = label
+                current_values = [value]
+
+        # Don't forget the last group
+        if current_label is not None:
+            merged_value = " ".join(current_values).rstrip(",")
+            result[current_label] = merged_value
+
+        return result
+
     def _parse_impl(self, address_string: str) -> Address:
         """Parse an address using usaddress library.
 
@@ -28,12 +63,15 @@ class USAddressParser(BaseAddressParser):
             Parsed Address object.
 
         Raises:
-            ValueError: If parsing fails due to repeated labels or other issues.
+            ValueError: If parsing fails due to other issues.
         """
         try:
-            parsed_address, address_type = usaddress.tag(address_string)
-        except usaddress.RepeatedLabelError as e:
-            raise ValueError(f"Failed to parse address (repeated label): {e}") from e
+            parsed_tokens = usaddress.parse(address_string)
+        except Exception as e:
+            raise ValueError(f"Failed to parse address: {e}") from e
 
-        # Convert OrderedDict to regular dict and create Address
-        return Address.model_construct(**dict(parsed_address))
+        # Merge consecutive tokens with the same label
+        parsed_address = self._merge_consecutive_labels(parsed_tokens)
+
+        # Create Address from merged dictionary
+        return Address.model_construct(**parsed_address)
