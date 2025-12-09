@@ -20,7 +20,7 @@ class USAddressParser(BaseAddressParser):
 
     def _merge_consecutive_labels(
         self, tokens: list[tuple[str, str]]
-    ) -> dict[str, str]:
+    ) -> dict[str, str | None]:
         """Merge consecutive tokens with the same label.
 
         Args:
@@ -32,9 +32,9 @@ class USAddressParser(BaseAddressParser):
         if not tokens:
             return {}
 
-        result = {}
-        current_label = None
-        current_values = []
+        result: dict[str, str | None] = {}
+        current_label: str | None = None
+        current_values: list[str] = []
 
         for value, label in tokens:
             if label == current_label:
@@ -74,4 +74,4 @@ class USAddressParser(BaseAddressParser):
         parsed_address = self._merge_consecutive_labels(parsed_tokens)
 
         # Create Address from merged dictionary
-        return Address.model_construct(**parsed_address)
+        return Address.model_construct(**parsed_address)  # type: ignore[arg-type]
