@@ -40,15 +40,10 @@ Quick Start:
 
 from __future__ import annotations
 
-import sys
+from importlib.metadata import PackageNotFoundError, version
 from typing import Optional
 
 # Dynamic version from package metadata
-if sys.version_info >= (3, 8):
-    from importlib.metadata import version, PackageNotFoundError
-else:
-    from importlib_metadata import version, PackageNotFoundError
-
 try:
     __version__ = version("ryandata-address-utils")
 except PackageNotFoundError:
