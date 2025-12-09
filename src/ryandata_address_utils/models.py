@@ -134,6 +134,10 @@ class Address(BaseModel):
     NotAddress: Optional[str] = Field(
         default=None, description="Text identified as not part of an address"
     )
+    RawInput: Optional[str] = Field(
+        default=None,
+        description="The original raw input string (useful for comparing with validated output)",
+    )
     Address1: Optional[str] = Field(
         default=None,
         description="Formatted street address line (auto-computed from components)",

@@ -71,5 +71,8 @@ class USAddressParser(BaseAddressParser):
         # Merge consecutive tokens with the same label
         parsed_address = self._merge_consecutive_labels(parsed_tokens)
 
+        # Add the raw input string to the parsed address
+        parsed_address["RawInput"] = address_string
+
         # Create Address from merged dictionary using model_validate to trigger validators
         return Address.model_validate(parsed_address)

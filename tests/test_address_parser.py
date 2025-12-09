@@ -514,13 +514,13 @@ class TestFuzzing:
         result = parse("", validate=False)
         if result.is_parsed:
             # If it succeeds, address component fields should be None
-            # Note: Address1, Address2, FullAddress are computed fields
+            # Note: Address1, Address2, FullAddress, RawInput are computed/meta fields
             addr_dict = result.to_dict()
-            # Check that main address fields are None (excluding computed fields)
+            # Check that main address fields are None (excluding computed/meta fields)
             main_fields = {
                 k: v
                 for k, v in addr_dict.items()
-                if k not in ("Address1", "Address2", "FullAddress")
+                if k not in ("Address1", "Address2", "FullAddress", "RawInput")
             }
             assert all(v is None for v in main_fields.values())
         # If not valid, that's also acceptable
@@ -530,13 +530,13 @@ class TestFuzzing:
         result = parse("   \t\n  ", validate=False)
         if result.is_parsed:
             # If it succeeds, address component fields should be None
-            # Note: Address1, Address2, FullAddress are computed fields
+            # Note: Address1, Address2, FullAddress, RawInput are computed/meta fields
             addr_dict = result.to_dict()
-            # Check that main address fields are None (excluding computed fields)
+            # Check that main address fields are None (excluding computed/meta fields)
             main_fields = {
                 k: v
                 for k, v in addr_dict.items()
-                if k not in ("Address1", "Address2", "FullAddress")
+                if k not in ("Address1", "Address2", "FullAddress", "RawInput")
             }
             assert all(v is None for v in main_fields.values())
         # If not valid, that's also acceptable
