@@ -139,6 +139,126 @@ class Address(BaseModel):
         """Convert address to dictionary."""
         return self.model_dump()
 
+    @property
+    def Address1(self) -> Optional[str]:
+        """Build the street address line (Address1) from street components.
+        
+        Includes all street-related components in proper order:
+        AddressNumberPrefix, AddressNumber, AddressNumberSuffix,
+        StreetNamePreModifier, StreetNamePreDirectional, StreetNamePreType,
+        StreetName, StreetNamePostType, StreetNamePostDirectional
+        
+        Also handles PO Box addresses (USPSBoxType + USPSBoxID).
+        
+        Returns:
+            Formatted street address line, or None if no street components present.
+        """
+        parts: list[str] = []
+        
+        # Check if this is a PO Box address
+        if self.USPSBoxType and self.USPSBoxID:
+            parts.append(self.USPSBoxType)
+            parts.append(self.USPSBoxID)
+            return " ".join(parts)
+        
+        # Build street address
+        if self.AddressNumberPrefix:
+            parts.append(self.AddressNumberPrefix)
+        if self.AddressNumber:
+            parts.append(self.AddressNumber)
+        if self.AddressNumberSuffix:
+            parts.append(self.AddressNumberSuffix)
+        if self.StreetNamePreModifier:
+            parts.append(self.StreetNamePreModifier)
+        if self.StreetNamePreDirectional:
+            parts.append(self.StreetNamePreDirectional)
+        if self.StreetNamePreType:
+            parts.append(self.StreetNamePreType)
+        if self.StreetName:
+            parts.append(self.StreetName)
+        if self.StreetNamePostType:
+            parts.append(self.StreetNamePostType)
+        if self.StreetNamePostDirectional:
+            parts.append(self.StreetNamePostDirectional)
+        
+        return " ".join(parts) if parts else None
+
+    @property
+    def Address2(self) -> Optional[str]:
+        """Build the unit/apartment line (Address2) from subaddress components.
+        
+        Includes subaddress and occupancy information:
+        SubaddressType + SubaddressIdentifier,
+        BuildingName,
+        OccupancyType + OccupancyIdentifier
+        
+        Returns:
+            Formatted unit/apartment line, or None if no subaddress components present.
+        """
+        parts: list[str] = []
+        
+        # Subaddress (Apt, Suite, Unit, etc.)
+        if self.SubaddressType and self.SubaddressIdentifier:
+            parts.append(f"{self.SubaddressType} {self.SubaddressIdentifier}")
+        elif self.SubaddressType:
+            parts.append(self.SubaddressType)
+        elif self.SubaddressIdentifier:
+            parts.append(self.SubaddressIdentifier)
+        
+        # Building name
+        if self.BuildingName:
+            parts.append(self.BuildingName)
+        
+        # Occupancy (Dept, Room, etc.)
+        if self.OccupancyType and self.OccupancyIdentifier:
+            parts.append(f"{self.OccupancyType} {self.OccupancyIdentifier}")
+        elif self.OccupancyType:
+            parts.append(self.OccupancyType)
+        elif self.OccupancyIdentifier:
+            parts.append(self.OccupancyIdentifier)
+        
+        return ", ".join(parts) if parts else None
+
+    @property
+    def FullAddress(self) -> str:
+        """Build the complete formatted address string.
+        
+        Combines Address1, Address2, City, State, and Zip into a single
+        comma-separated line: "Address1, Address2, City, State Zip"
+        
+        Missing components are omitted gracefully. If all components are None,
+        returns an empty string.
+        
+        Returns:
+            Formatted full address string.
+        """
+        parts: list[str] = []
+        
+        # Add Address1 (street address)
+        if self.Address1:
+            parts.append(self.Address1)
+        
+        # Add Address2 (unit/apartment)
+        if self.Address2:
+            parts.append(self.Address2)
+        
+        # Add City, State Zip line
+        city_state_zip_parts: list[str] = []
+        if self.PlaceName:
+            city_state_zip_parts.append(self.PlaceName)
+        
+        if self.StateName and self.ZipCode:
+            city_state_zip_parts.append(f"{self.StateName} {self.ZipCode}")
+        elif self.StateName:
+            city_state_zip_parts.append(self.StateName)
+        elif self.ZipCode:
+            city_state_zip_parts.append(self.ZipCode)
+        
+        if city_state_zip_parts:
+            parts.append(", ".join(city_state_zip_parts))
+        
+        return ", ".join(parts)
+
 
 @dataclass
 class ZipInfo:

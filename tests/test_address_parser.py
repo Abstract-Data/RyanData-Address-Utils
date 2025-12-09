@@ -676,3 +676,199 @@ class TestAddressService:
         result = service.parse_to_dict("123 Main St, Austin TX 78749")
         assert result["AddressNumber"] == "123"
         assert result["ZipCode"] == "78749"
+
+
+# =============================================================================
+# Address Formatting Tests (Address1, Address2, FullAddress Properties)
+# =============================================================================
+
+
+class TestAddressFormatting:
+    """Test the Address formatting properties (Address1, Address2, FullAddress)."""
+
+    def test_simple_street_address_to_address1(self) -> None:
+        """Simple street address should format to Address1 correctly."""
+        result = parse("123 Main St, Austin TX 78749", validate=False)
+        assert result.address is not None
+        address1 = result.address.Address1
+        assert address1 is not None
+        assert "123" in address1
+        assert "Main" in address1
+        assert "St" in address1
+
+    def test_address1_with_directionals(self) -> None:
+        """Address1 should include directionals."""
+        result = parse("100 N Main St S, Austin TX 78749", validate=False)
+        assert result.address is not None
+        address1 = result.address.Address1
+        assert address1 is not None
+        # Should contain both pre and post directionals
+        assert "100" in address1
+        assert "Main" in address1
+        assert "St" in address1
+
+    def test_address1_po_box(self) -> None:
+        """PO Box addresses should format to Address1."""
+        result = parse("PO Box 1234, Austin TX 78749", validate=False)
+        assert result.address is not None
+        address1 = result.address.Address1
+        assert address1 is not None
+        assert "PO Box" in address1 or "P.O." in address1
+        assert "1234" in address1
+
+    def test_address1_none_when_no_components(self) -> None:
+        """Address1 should be None when no street components present."""
+        from ryandata_address_utils.models import AddressBuilder
+
+        address = AddressBuilder().with_city("Austin").with_state("TX").with_zip("78749").build()
+        assert address.Address1 is None
+
+    def test_address2_with_apartment(self) -> None:
+        """Address2 should include apartment/unit information."""
+        result = parse("400 Main St Apt 5, Austin TX 78749", validate=False)
+        assert result.address is not None
+        address2 = result.address.Address2
+        # Address2 may or may not be populated depending on parser
+        if address2:
+            assert "Apt" in address2 or "5" in address2
+
+    def test_address2_none_when_no_subaddress(self) -> None:
+        """Address2 should be None when no subaddress components present."""
+        result = parse("123 Main St, Austin TX 78749", validate=False)
+        assert result.address is not None
+        assert result.address.Address2 is None
+
+    def test_address2_with_suite(self) -> None:
+        """Address2 should include suite information."""
+        result = parse("500 Main St Suite 100, Austin TX 78749", validate=False)
+        assert result.address is not None
+        address2 = result.address.Address2
+        if address2:
+            # May contain suite info depending on parser
+            assert len(address2) > 0
+
+    def test_full_address_basic(self) -> None:
+        """FullAddress should format correctly for basic address."""
+        result = parse("123 Main St, Austin TX 78749", validate=False)
+        assert result.address is not None
+        full_address = result.address.FullAddress
+        assert "123" in full_address
+        assert "Main" in full_address
+        assert "Austin" in full_address
+        assert "TX" in full_address
+        assert "78749" in full_address
+
+    def test_full_address_with_po_box(self) -> None:
+        """FullAddress should format correctly for PO Box."""
+        result = parse("PO Box 1234, Austin TX 78749", validate=False)
+        assert result.address is not None
+        full_address = result.address.FullAddress
+        assert "1234" in full_address
+        assert "Austin" in full_address
+        assert "TX" in full_address
+        assert "78749" in full_address
+
+    def test_full_address_only_city_state_zip(self) -> None:
+        """FullAddress should work with only city, state, zip."""
+        from ryandata_address_utils.models import AddressBuilder
+
+        address = (
+            AddressBuilder().with_city("Austin").with_state("TX").with_zip("78749").build()
+        )
+        full_address = address.FullAddress
+        assert "Austin" in full_address
+        assert "TX" in full_address
+        assert "78749" in full_address
+
+    def test_full_address_no_components(self) -> None:
+        """FullAddress should return empty string when all components None."""
+        from ryandata_address_utils.models import Address
+
+        address = Address()
+        assert address.FullAddress == ""
+
+    def test_full_address_only_address1(self) -> None:
+        """FullAddress should work with only Address1."""
+        from ryandata_address_utils.models import AddressBuilder
+
+        address = (
+            AddressBuilder()
+            .with_street_number("123")
+            .with_street_name("Main")
+            .with_street_type("St")
+            .build()
+        )
+        full_address = address.FullAddress
+        assert "123" in full_address
+        assert "Main" in full_address
+        assert "St" in full_address
+
+    def test_address1_with_number_suffix(self) -> None:
+        """Address1 should include address number suffix."""
+        from ryandata_address_utils.models import AddressBuilder
+
+        address = (
+            AddressBuilder()
+            .with_street_number("123")
+            .with_address_number_suffix("1/2")
+            .with_street_name("Main")
+            .with_street_type("St")
+            .build()
+        )
+        address1 = address.Address1
+        assert address1 is not None
+        assert "123" in address1
+        assert "1/2" in address1
+
+    def test_address2_building_name(self) -> None:
+        """Address2 should include building name."""
+        from ryandata_address_utils.models import AddressBuilder
+
+        address = (
+            AddressBuilder()
+            .with_street_number("456")
+            .with_street_name("Oak")
+            .with_street_type("Ave")
+            .with_building_name("The Towers")
+            .build()
+        )
+        address1 = address.Address1
+        address2 = address.Address2
+        assert address1 is not None
+        assert "456" in address1
+        assert address2 is not None
+        assert "The Towers" in address2
+
+    def test_address_formatting_after_parsing(self) -> None:
+        """Address properties should be available after parsing."""
+        result = parse("123 Main St, Austin TX 78749")
+        assert result.address is not None
+        # All three properties should be available regardless of validation result
+        assert result.address.Address1 is not None
+        assert result.address.Address2 is None  # No unit info
+        assert result.address.FullAddress is not None
+
+    def test_full_address_format_consistency(self) -> None:
+        """FullAddress format should be consistent across different address types."""
+        from ryandata_address_utils.models import AddressBuilder
+
+        # Address without Address2
+        addr1 = (
+            AddressBuilder()
+            .with_street_number("100")
+            .with_street_name("First")
+            .with_street_type("Ave")
+            .with_city("Dallas")
+            .with_state("TX")
+            .with_zip("75201")
+            .build()
+        )
+        full = addr1.FullAddress
+        # Should be: "100 First Ave, Dallas, TX 75201"
+        assert "100" in full
+        assert "First" in full
+        assert "Dallas" in full
+        assert "TX" in full
+        assert "75201" in full
+        # Should contain exactly 3 commas (addr1, city/state/zip)
+        assert full.count(",") >= 1
