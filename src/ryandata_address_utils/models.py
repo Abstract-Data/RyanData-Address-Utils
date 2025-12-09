@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Self
+from typing import Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field
+from typing_extensions import Self
 
 
 class AddressField(str, Enum):
@@ -55,84 +56,86 @@ class Address(BaseModel):
         str_strip_whitespace=True,  # Strip whitespace from strings
     )
 
-    AddressNumberPrefix: str | None = Field(
+    AddressNumberPrefix: Optional[str] = Field(
         default=None,
         description="A modifier before the address number (e.g. 'N' in 'N 123 Main St')",
     )
-    AddressNumber: str | None = Field(
+    AddressNumber: Optional[str] = Field(
         default=None, description="The primary street number of the address"
     )
-    AddressNumberSuffix: str | None = Field(
+    AddressNumberSuffix: Optional[str] = Field(
         default=None,
         description="A modifier after the address number, such as a half (e.g. '1/2')",
     )
-    StreetNamePreModifier: str | None = Field(
+    StreetNamePreModifier: Optional[str] = Field(
         default=None,
         description="A word or phrase before the street name, such as 'Old' in 'Old Main St'",
     )
-    StreetNamePreDirectional: str | None = Field(
+    StreetNamePreDirectional: Optional[str] = Field(
         default=None,
         description="A directional that comes before the street, like 'N', 'S', etc.",
     )
-    StreetNamePreType: str | None = Field(
+    StreetNamePreType: Optional[str] = Field(
         default=None,
         description="A street type before the street name, e.g. 'Avenue' in 'Avenue C'",
     )
-    StreetName: str | None = Field(default=None, description="The name of the street")
-    StreetNamePostType: str | None = Field(
+    StreetName: Optional[str] = Field(default=None, description="The name of the street")
+    StreetNamePostType: Optional[str] = Field(
         default=None,
         description="The type of street following the name, such as 'St', 'Ave', etc.",
     )
-    StreetNamePostDirectional: str | None = Field(
+    StreetNamePostDirectional: Optional[str] = Field(
         default=None,
         description="A directional that comes after the street, like 'SE' in 'Main St SE'",
     )
-    SubaddressType: str | None = Field(
+    SubaddressType: Optional[str] = Field(
         default=None, description="The type of subaddress (e.g. 'Apt', 'Suite', 'Unit')"
     )
-    SubaddressIdentifier: str | None = Field(
+    SubaddressIdentifier: Optional[str] = Field(
         default=None, description="The identifier for the subaddress (e.g. '2B', '101')"
     )
-    BuildingName: str | None = Field(
+    BuildingName: Optional[str] = Field(
         default=None, description="The name of a building, if included in the address"
     )
-    OccupancyType: str | None = Field(
+    OccupancyType: Optional[str] = Field(
         default=None, description="The type of occupancy (e.g. 'Dept', 'Room')"
     )
-    OccupancyIdentifier: str | None = Field(
+    OccupancyIdentifier: Optional[str] = Field(
         default=None, description="The identifier for the occupancy (e.g. 'Dept 34', 'Rm 2')"
     )
-    CornerOf: str | None = Field(
+    CornerOf: Optional[str] = Field(
         default=None,
         description="Specifies if the address references the corner of two streets",
     )
-    LandmarkName: str | None = Field(
+    LandmarkName: Optional[str] = Field(
         default=None, description="A landmark referenced in the address"
     )
-    PlaceName: str | None = Field(default=None, description="The city or place name")
-    StateName: str | None = Field(
+    PlaceName: Optional[str] = Field(default=None, description="The city or place name")
+    StateName: Optional[str] = Field(
         default=None, description="The abbreviated or full name of the state"
     )
-    ZipCode: str | None = Field(default=None, description="The postal ZIP code")
-    USPSBoxType: str | None = Field(
+    ZipCode: Optional[str] = Field(default=None, description="The postal ZIP code")
+    USPSBoxType: Optional[str] = Field(
         default=None, description="The type of post office box (e.g. 'PO Box')"
     )
-    USPSBoxID: str | None = Field(default=None, description="The identifier/number for the PO Box")
-    USPSBoxGroupType: str | None = Field(
+    USPSBoxID: Optional[str] = Field(
+        default=None, description="The identifier/number for the PO Box"
+    )
+    USPSBoxGroupType: Optional[str] = Field(
         default=None, description="The group type for the PO Box (if present)"
     )
-    USPSBoxGroupID: str | None = Field(
+    USPSBoxGroupID: Optional[str] = Field(
         default=None, description="The group ID for the PO Box (if present)"
     )
-    IntersectionSeparator: str | None = Field(
+    IntersectionSeparator: Optional[str] = Field(
         default=None, description="The separator for intersections (e.g. '&' or 'and')"
     )
-    Recipient: str | None = Field(default=None, description="The recipient or addressee's name")
-    NotAddress: str | None = Field(
+    Recipient: Optional[str] = Field(default=None, description="The recipient or addressee's name")
+    NotAddress: Optional[str] = Field(
         default=None, description="Text identified as not part of an address"
     )
 
-    def to_dict(self) -> dict[str, str | None]:
+    def to_dict(self) -> dict[str, Optional[str]]:
         """Convert address to dictionary."""
         return self.model_dump()
 
@@ -154,7 +157,7 @@ class ValidationError:
 
     field: str
     message: str
-    value: str | None = None
+    value: Optional[str] = None
 
 
 @dataclass
@@ -164,7 +167,7 @@ class ValidationResult:
     is_valid: bool
     errors: list[ValidationError] = field(default_factory=list)
 
-    def add_error(self, field: str, message: str, value: str | None = None) -> None:
+    def add_error(self, field: str, message: str, value: Optional[str] = None) -> None:
         """Add a validation error."""
         self.errors.append(ValidationError(field=field, message=message, value=value))
         self.is_valid = False
@@ -182,9 +185,9 @@ class ParseResult:
     """Result of address parsing."""
 
     raw_input: str
-    address: Address | None = None
-    error: Exception | None = None
-    validation: ValidationResult | None = None
+    address: Optional[Address] = None
+    error: Optional[Exception] = None
+    validation: Optional[ValidationResult] = None
 
     @property
     def is_valid(self) -> bool:
@@ -200,7 +203,7 @@ class ParseResult:
         """Check if parsing was successful (regardless of validation)."""
         return self.error is None and self.address is not None
 
-    def to_dict(self) -> dict[str, str | None]:
+    def to_dict(self) -> dict[str, Optional[str]]:
         """Convert to dictionary of address fields."""
         if self.address:
             return self.address.to_dict()
@@ -227,7 +230,7 @@ class AddressBuilder:
     """
 
     def __init__(self) -> None:
-        self._data: dict[str, str | None] = {}
+        self._data: dict[str, Optional[str]] = {}
 
     def with_address_number_prefix(self, prefix: str) -> Self:
         """Set address number prefix (e.g., 'N' in 'N 123 Main St')."""
@@ -319,7 +322,7 @@ class AddressBuilder:
         self._data["Recipient"] = recipient
         return self
 
-    def with_field(self, field: str | AddressField, value: str) -> Self:
+    def with_field(self, field: Union[str, AddressField], value: str) -> Self:
         """Set an arbitrary field by name or enum."""
         field_name = field.value if isinstance(field, AddressField) else field
         if field_name not in ADDRESS_FIELDS:

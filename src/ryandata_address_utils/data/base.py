@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from functools import lru_cache
+from typing import Optional
 
 from ryandata_address_utils.models import ZipInfo
 
@@ -37,7 +38,7 @@ class BaseDataSource(ABC):
         ...
 
     @abstractmethod
-    def _get_zip_info_impl(self, zip_code: str) -> ZipInfo | None:
+    def _get_zip_info_impl(self, zip_code: str) -> Optional[ZipInfo]:
         """Internal implementation of ZIP info lookup.
 
         Args:
@@ -78,7 +79,7 @@ class BaseDataSource(ABC):
         # Handle ZIP+4 format (12345-6789) and pad to 5 digits
         return zip_code.split("-")[0].strip().zfill(5)
 
-    def get_zip_info(self, zip_code: str) -> ZipInfo | None:
+    def get_zip_info(self, zip_code: str) -> Optional[ZipInfo]:
         """Get information about a ZIP code.
 
         Args:
@@ -101,7 +102,7 @@ class BaseDataSource(ABC):
         """
         return self.get_zip_info(zip_code) is not None
 
-    def normalize_state(self, state: str) -> str | None:
+    def normalize_state(self, state: str) -> Optional[str]:
         """Normalize a state name to its abbreviation.
 
         Args:
