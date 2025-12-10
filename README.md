@@ -10,6 +10,8 @@ A Python address parser built for Ryan Data that uses `usaddress` to parse US ad
 
 ## Installation
 
+### Using pip
+
 ```bash
 pip install git+https://github.com/Abstract-Data/RyanData-Address-Utils.git
 ```
@@ -18,6 +20,26 @@ With pandas support:
 
 ```bash
 pip install "ryandata-address-utils[pandas] @ git+https://github.com/Abstract-Data/RyanData-Address-Utils.git"
+```
+
+### Using uv
+
+```bash
+uv add git+https://github.com/Abstract-Data/RyanData-Address-Utils.git
+```
+
+With pandas support:
+
+```bash
+uv add "ryandata-address-utils[pandas] @ git+https://github.com/Abstract-Data/RyanData-Address-Utils.git"
+```
+
+Or from local directory:
+
+```bash
+git clone https://github.com/Abstract-Data/RyanData-Address-Utils.git
+cd RyanData-Address-Utils
+uv sync
 ```
 
 ## Quick Start
@@ -183,6 +205,30 @@ parser = ParserFactory.create("custom")
 
 ## Development
 
+### Using uv (Recommended)
+
+```bash
+git clone https://github.com/Abstract-Data/RyanData-Address-Utils.git
+cd RyanData-Address-Utils
+
+# Install with dev dependencies
+uv sync
+
+# Run tests
+uv run pytest
+
+# Run linter
+uv run ruff check src/
+
+# Run type checker
+uv run mypy src/
+
+# Format code
+uv run ruff format src/
+```
+
+### Using pip + Makefile
+
 ```bash
 git clone https://github.com/Abstract-Data/RyanData-Address-Utils.git
 cd RyanData-Address-Utils
@@ -195,6 +241,12 @@ make test
 
 # Run linter
 make lint
+
+# Run type checker
+make typecheck
+
+# Format code
+make format
 ```
 
 ## License
