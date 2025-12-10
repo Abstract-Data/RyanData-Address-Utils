@@ -30,7 +30,15 @@ jobs:
       - name: Set up Python
         run: uv python install ${{ matrix.python-version }}
 
+      - name: Cache libpostal
+        id: cache-libpostal
+        uses: actions/cache@v4
+        with:
+          path: ~/.local
+          key: libpostal-${{ runner.os }}-v1.0.0
+
       - name: Install libpostal from source
+        if: steps.cache-libpostal.outputs.cache-hit != 'true'
         run: |
           set -eux
           sudo apt-get update
@@ -41,6 +49,9 @@ jobs:
           ./configure --prefix="$HOME/.local" --datadir="$HOME/.local/share/libpostal"
           make
           make install
+
+      - name: Setup libpostal environment
+        run: |
           # Export paths so subsequent steps can find libpostal
           echo "LIBPOSTAL_DATA_DIR=$HOME/.local/share/libpostal" >> "$GITHUB_ENV"
           echo "LD_LIBRARY_PATH=$HOME/.local/lib:${LD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
