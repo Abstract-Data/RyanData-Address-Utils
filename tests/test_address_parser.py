@@ -979,3 +979,109 @@ def test_parse_auto_fallback_on_us_validation_error() -> None:
     assert result.source == "international"
     assert result.is_valid
     assert result.international_address is not None
+
+
+# Extended international/US complex cases for libpostal
+ADVANCED_COMPLEX_ADDRESSES = [
+    # United States / Territories
+    (
+        "Sales Dept, Building C, 4th Floor, Suite 450, 1234 W. 56th St., "
+        "Los Angeles, CA 90037-1234, USA"
+    ),
+    "Corner of 5th Ave & W 34th St, Manhattan, New York, NY 10001, USA",
+    "RR 2 Box 152, PO Box 45, Springfield, KY 40069, USA",
+    "789 north main street apartment 5b chicago il 60614 usa",
+    "PSC 808 Box 33, APO AE 09618-0033, USA",
+    "Urb. Jardines de Caparra, Calle 3 B-15, Bayamón, PR 00959-1234, USA",
+    # Canada
+    "Unit 507-1234 Rue Sainte-Catherine Ouest, Montréal QC H3B 1E5, Canada",
+    "Site 2 Comp 12 RR 1, 24567 Highway 16 E, Vegreville AB T9C 1C2, Canada",
+    # UK / Ireland
+    "Flat 5B, Wellington House, 123-125 High Holborn, Camden, London WC1V 6EA, United Kingdom",
+    "Rose Cottage, Church Lane, Little Wittenham, Oxfordshire OX14 4QG, United Kingdom",
+    "Apartment 3, Block B, Smithfield Village, Smithfield, Dublin 7, D07 FXY2, Ireland",
+    # Western Europe
+    "Musterstraße 45, Hinterhaus, 3. OG rechts, 10999 Berlin, Deutschland",
+    (
+        "c/o M. Jean Dupont, 18 Rue de la République, Bâtiment B, Escalier 2, 3ème étage, "
+        "13002 Marseille CEDEX 01, France"
+    ),
+    "Calle de Alcalá, 123, Bloque 4, Esc. B, 5º Dcha, 28009 Madrid, España",
+    "c/o Studio Legale Rossi, Via Garibaldi 21, Scala A, Int. 7, 16124 Genova GE, Italia",
+    "Keizersgracht 123B-III, 1015 CJ Amsterdam, Nederland",
+    "Bahnhofstrasse 7, App. 12, 8001 Zürich ZH, Schweiz",
+    "Karl Johans gate 15, 2. etg, NO-0159 Oslo, Norge",
+    # Eastern Europe / Russia / Turkey / Greece
+    "ул. Арбат, д. 12, корп. 3, стр. 5, кв. 18, Москва, 119019, Россия",
+    "ul. Jana Pawła II 45/12, 00-175 Warszawa, Polska",
+    "Λεωφόρος Βασιλίσσης Σοφίας 10, 4ος όροφος, 106 74 Αθήνα, Ελλάδα",
+    "Atatürk Mahallesi, Gül Sokak No:25 Daire:8, 34758 Ümraniye/İstanbul, Türkiye",
+    # Middle East / Israel
+    "רחוב הרצל 15, דירה 7, שכונת נווה צדק, תל אביב-יפו 6511101, ישראל",
+    "Office 804, Tower A, Business Bay, PO Box 123456, Dubai, United Arab Emirates",
+    # South Asia
+    (
+        "Flat 802, Tower 5, Brigade Gateway, beside Orion Mall, Dr. Rajkumar Road, "
+        "Malleswaram West, Bengaluru 560055, Karnataka, India"
+    ),
+    (
+        "H.No. 3-45, Near Hanuman Temple, Malkajgiri Village, Medchal-Malkajgiri Dist., "
+        "Telangana 500047, India"
+    ),
+    "House #27-B, Mohallah Gulshan-e-Rehman, Tehsil Samundri, District Faisalabad 37300, Pakistan",
+    (
+        "Holding 12/B, Road 3, Block A, Bashundhara R/A, Badda Thana, Dhaka 1229, "
+        "Dhaka Division, Bangladesh"
+    ),
+    # East Asia
+    "〒160-0022 東京都新宿区新宿3丁目38-1 ルミネエスト新宿 7階",
+    "Lumine Est Shinjuku 7F, 3-38-1 Shinjuku, Shinjuku-ku, Tokyo 160-0022, Japan",
+    "中国江苏省苏州市工业园区独墅湖高教区仁爱路199号 创新创业大厦A座1508室 215123",
+    (
+        "Room 1508, Building A, Chuangxin Chuangye Dasha, 199 Ren'ai Rd, "
+        "Dushu Lake Sci-Edu Innovation District, Suzhou, Jiangsu 215123, China"
+    ),
+    "서울특별시 마포구 양화로 45, 10층 1001호 (서교동), 04038, 대한민국",
+    "Flat A, 23/F, Tower 3, Laguna City, 8 Laguna Street, Lam Tin, Kowloon, Hong Kong",
+    "Blk 123 Ang Mo Kio Ave 3 #12-345, Singapore 560123",
+    # Southeast Asia & Oceania
+    (
+        "Unit 4B, Building 2, Eastwood Citywalk, 188 E. Rodriguez Jr. Ave., "
+        "Brgy. Bagumbayan, Quezon City 1110, Metro Manila, Philippines"
+    ),
+    "Jl. Sudirman No. 25 RT 04/RW 06, Kel. Menteng, Kec. Menteng, Jakarta Pusat 10310, Indonesia",
+    "Lot 7, 255 Old Northern Rd, Castle Hill NSW 2154, Australia",
+    "103 Smiths Road, RD 2, Hamilton 3282, New Zealand",
+    # Africa & Latin America
+    "12B 7th Avenue, Parktown North, Johannesburg, Gauteng 2193, South Africa",
+    (
+        "Flat 6, Block C, Lekki Gardens Estate, Km 15 Lekki-Epe Expressway, Ajah, "
+        "Eti-Osa LGA, Lagos State, Nigeria"
+    ),
+    (
+        "Av. Insurgentes Sur 1602, Piso 9, Colonia Crédito Constructor, "
+        "Alcaldía Benito Juárez, 03940 Ciudad de México, CDMX, México"
+    ),
+    "Rua do Catete, 311, Bloco B, Apto 1203, Flamengo, Rio de Janeiro - RJ, 22220-001, Brasil",
+    "Av. Corrientes 1234, Piso 7º, Depto. C, C1043AAX Ciudad Autónoma de Buenos Aires, Argentina",
+    "Los Militares 5001, Oficina 1204, Las Condes, Región Metropolitana, 7550000, Chile",
+    # Messy / unstructured
+    "attn billing john smith 4th flr 99 king street east toronto on m5c1g4 canada",
+    '  "The Old Mill"   ,  7\tMill Road ..   Ballymena   BT42 1AA   UK ',
+    "fl 3 rm 305, 18 yonge st, tornto on m5e 1z8 canada",
+    "Station Road, near City Center Mall, Sector 17, Chandigarh 160017, Mohali, Punjab, India",
+    (
+        "Starbucks Coffee inside Central Station, Main Concourse, 89 E 42nd St, Midtown, "
+        "Manhattan, New York, NY 10017-5503, USA"
+    ),
+]
+
+
+@pytest.mark.parametrize("addr", ADVANCED_COMPLEX_ADDRESSES)
+def test_parse_auto_advanced_complex_addresses(addr: str) -> None:
+    _require_libpostal()
+    service = AddressService()
+    result = service.parse_auto_route(addr, validate=True)
+    assert result.source in {"us", "international"}
+    assert result.error is None
+    assert result.address is not None or result.international_address is not None
