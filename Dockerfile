@@ -20,8 +20,12 @@ WORKDIR /app
 # Allow overriding install ref (defaults to main)
 ARG RYANDATA_ADDR_UTILS_REF=main
 
-# Install the package from git ref
-RUN pip install --no-cache-dir "git+https://github.com/Abstract-Data/RyanData-Address-Utils.git@${RYANDATA_ADDR_UTILS_REF}"
+# Install the package from git ref plus API deps
+RUN pip install --no-cache-dir \
+    "git+https://github.com/Abstract-Data/RyanData-Address-Utils.git@${RYANDATA_ADDR_UTILS_REF}" \
+    fastapi \
+    "uvicorn[standard]" \
+    postal
 
 # Optional: copy source for local development/mounting (no-op unless mounted)
 COPY . /app

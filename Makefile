@@ -63,8 +63,8 @@ docker-test:
 		python -c "from ryandata_address_utils import parse; print(parse('123 Main St, Austin TX 78749').to_dict())"
 
 docker-run-api:
-	docker run --rm -it -p 8000:8000 $(DOCKER_IMAGE):$(DOCKER_TAG) \
-		python -m ryandata_address_utils.api
+	docker run --rm -p 8000:8000 $(DOCKER_IMAGE):$(DOCKER_TAG) \
+		uvicorn ryandata_address_utils.api:app --host 0.0.0.0 --port 8000
 
 # Clean up
 clean:

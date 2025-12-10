@@ -49,7 +49,8 @@ make docker-shell
 Run the optional API (FastAPI) on port 8000:
 ```bash
 make docker-run-api
-# Then call: curl "http://localhost:8000/parse?address=123%20Main%20St,%20Austin%20TX%2078749"
+# Then call:
+# curl "http://localhost:8000/parse?address=123%20Main%20St,%20Austin%20TX%2078749"
 # International (if libpostal available in image):
 # curl "http://localhost:8000/parse_international?address=10%20Downing%20St,%20London"
 ```
