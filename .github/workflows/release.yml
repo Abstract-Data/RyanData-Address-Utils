@@ -41,7 +41,7 @@ jobs:
       - name: Run semantic-release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: uv run semantic-release publish --ci --minor
+        run: uv run semantic-release publish
 
       - name: Build distribution packages
         run: uv pip install build && uv run python -m build
