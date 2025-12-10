@@ -59,6 +59,7 @@ class BaseAddressParser(ABC):
             return ParseResult(
                 raw_input=address_string,
                 address=address,
+                is_international=False,
             )
         except Exception as e:
             self._error_count += 1

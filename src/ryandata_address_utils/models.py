@@ -288,6 +288,10 @@ class Address(BaseModel):
         default=None,
         description="The original raw input string (useful for comparing with validated output)",
     )
+    IsInternational: Optional[bool] = Field(
+        default=None,
+        description="True if derived from an international/libpostal parse; otherwise None",
+    )
     Address1: Optional[str] = Field(
         default=None,
         description="Formatted street address line (auto-computed from components)",
@@ -482,6 +486,10 @@ class InternationalAddress(BaseModel):
     PostalCode: Optional[str] = Field(default=None, description="Postal/ZIP code")
     Country: Optional[str] = Field(default=None, description="Country name")
     CountryCode: Optional[str] = Field(default=None, description="Country code (if available)")
+    FullAddress: str = Field(
+        default="",
+        description="Complete formatted address string derived from parsed components",
+    )
     Components: dict[str, list[str]] = Field(
         default_factory=dict,
         description="Raw libpostal components (lists to preserve duplicates)",
@@ -551,6 +559,19 @@ class InternationalAddress(BaseModel):
                 {"package": PACKAGE_NAME, "value": raw_input},
             )
 
+        def build_full_address() -> str:
+            line1_parts = [part for part in [house_number, road] if part]
+            line1 = " ".join(line1_parts).strip()
+            locality_parts = [part for part in [city, state, postal_code] if part]
+            parts: list[str] = []
+            if line1:
+                parts.append(line1)
+            if locality_parts:
+                parts.append(", ".join(locality_parts))
+            if country:
+                parts.append(country)
+            return ", ".join(parts)
+
         return cls(
             RawInput=raw_input,
             HouseNumber=house_number,
@@ -560,6 +581,7 @@ class InternationalAddress(BaseModel):
             PostalCode=postal_code,
             Country=country,
             Components=components,
+            FullAddress=build_full_address(),
         )
 
 
@@ -613,6 +635,7 @@ class ParseResult:
     error: Optional[Exception] = None
     validation: Optional[ValidationResult] = None
     source: Optional[str] = None  # "us" or "international"
+    is_international: Optional[bool] = None
 
     @property
     def is_valid(self) -> bool:

@@ -7,6 +7,7 @@ from ryandata_address_utils.data import DataSourceFactory
 from ryandata_address_utils.models import (
     ADDRESS_FIELDS,
     PACKAGE_NAME,
+    Address,
     InternationalAddress,
     ParseResult,
     RyanDataAddressError,
@@ -75,6 +76,20 @@ def _is_probably_international(address_string: str) -> bool:
         return True
 
     return bool(any(ord(ch) > 127 for ch in address_string))
+
+
+def _international_to_address(intl: InternationalAddress) -> Address:
+    """Convert an InternationalAddress into an Address schema for consumers expecting Address."""
+
+    data: dict[str, Optional[str]] = {
+        "AddressNumber": intl.HouseNumber,
+        "StreetName": intl.Road,
+        "PlaceName": intl.City,
+        "StateName": intl.State,
+        "RawInput": intl.RawInput,
+        "IsInternational": True,
+    }
+    return Address.model_validate(data)
 
 
 if TYPE_CHECKING:
@@ -165,6 +180,7 @@ class AddressService:
         """
         result = self._parser.parse(address_string)
         result.source = "us"
+        result.is_international = False
 
         if validate and result.is_parsed and result.address is not None:
             result.validation = self._validator.validate(result.address)
@@ -315,6 +331,7 @@ class AddressService:
                 international_address=None,
                 validation=ValidationResult(is_valid=False, errors=[]),
                 source="international",
+            is_international=True,
             )
 
         try:
@@ -325,13 +342,15 @@ class AddressService:
                 components.setdefault(label, []).append(value)
 
             intl_address = InternationalAddress.from_libpostal(address_string, components)
+            addr_from_intl = _international_to_address(intl_address)
             return ParseResult(
                 raw_input=address_string,
-                address=None,
+                address=addr_from_intl,
                 international_address=intl_address,
                 error=None,
                 validation=ValidationResult(is_valid=True),
                 source="international",
+            is_international=True,
             )
         except Exception as e:  # pragma: no cover
             return ParseResult(
@@ -341,6 +360,7 @@ class AddressService:
                 international_address=None,
                 validation=ValidationResult(is_valid=False, errors=[]),
                 source="international",
+            is_international=True,
             )
 
     def parse_auto_route(self, address_string: str, *, validate: bool = True) -> ParseResult:
@@ -355,6 +375,7 @@ class AddressService:
             if lp_parse_address is not None:
                 intl_result = self.parse_international(address_string)
                 if intl_result.is_valid or intl_result.international_address is not None:
+                    intl_result.is_international = True
                     return intl_result
             # Return error as a ParseResult to avoid raising in auto route
             return ParseResult(
@@ -364,6 +385,7 @@ class AddressService:
                 error=exc,
                 validation=ValidationResult(is_valid=False, errors=[]),
                 source="us",
+                is_international=False,
             )
 
         if us_result.is_valid:
@@ -373,6 +395,7 @@ class AddressService:
             return us_result
 
         intl_result = self.parse_international(address_string)
+        intl_result.is_international = True
         return intl_result
 
     # -------------------------------------------------------------------------

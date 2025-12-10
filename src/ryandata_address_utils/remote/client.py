@@ -123,6 +123,8 @@ class LibpostalRemoteClient:
         address = None
         international_address = None
         error: Optional[Exception] = None
+        is_international: Optional[bool] = None
+        intl_mapped_address: Optional[Address] = None
 
         address_payload = data.get("address")
         if address_payload:
@@ -142,6 +144,17 @@ class LibpostalRemoteClient:
             merged.setdefault("RawInput", address_string)
             try:
                 international_address = InternationalAddress.model_validate(merged)
+                is_international = True
+                intl_mapped_address = Address.model_validate(
+                    {
+                        "AddressNumber": international_address.HouseNumber,
+                        "StreetName": international_address.Road,
+                        "PlaceName": international_address.City,
+                        "StateName": international_address.State,
+                        "RawInput": international_address.RawInput,
+                        "IsInternational": True,
+                    }
+                )
             except Exception as exc:
                 error = error or RyanDataAddressError(
                     "remote_parse",
@@ -155,14 +168,19 @@ class LibpostalRemoteClient:
             validation.add_error("remote", message)
 
         source = data.get("source") or data.get("mode") or fallback_source
+        if is_international is None and source == "international":
+            is_international = True
+        elif is_international is None and source == "us":
+            is_international = False
 
         return ParseResult(
             raw_input=address_string,
-            address=address,
+            address=address or intl_mapped_address,
             international_address=international_address,
             error=error,
             validation=validation,
             source=source,
+            is_international=is_international,
         )
 
     def parse(self, address: str, *, validate: bool = True) -> ParseResult:
