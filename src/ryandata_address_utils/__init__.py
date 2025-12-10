@@ -42,7 +42,6 @@ from __future__ import annotations
 
 from typing import Optional
 
-# Imports grouped by type and sorted
 from ryandata_address_utils.data import (
     BaseDataSource,
     CSVDataSource,
@@ -76,6 +75,13 @@ from ryandata_address_utils.protocols import (
     DataSourceProtocol,
     ValidatorProtocol,
 )
+from ryandata_address_utils.remote import (
+    LibpostalContainerConfig,
+    LibpostalRemoteClient,
+    ensure_libpostal_container,
+    get_remote_client,
+    parse_remote,
+)
 from ryandata_address_utils.service import AddressService, get_default_service, parse
 from ryandata_address_utils.validation import (
     BaseValidator,
@@ -84,7 +90,7 @@ from ryandata_address_utils.validation import (
     ZipCodeValidator,
 )
 
-__version__ = "0.3.1"
+__version__ = "0.4.0"
 __package_name__ = "ryandata-address-utils"
 
 __all__ = [
@@ -132,6 +138,12 @@ __all__ = [
     "parse_address_series",
     "parse_address_to_dict",
     "register_accessor",
+    # Remote/libpostal API
+    "LibpostalRemoteClient",
+    "LibpostalContainerConfig",
+    "get_remote_client",
+    "ensure_libpostal_container",
+    "parse_remote",
 ]
 
 

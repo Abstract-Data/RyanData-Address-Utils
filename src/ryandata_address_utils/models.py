@@ -518,18 +518,36 @@ class InternationalAddress(BaseModel):
         state = join("state") or join("state_district")
         postal_code = join("postcode")
         country = join("country")
-
         if road is None:
-            raise RyanDataAddressError(
-                "international_validation",
-                "International address missing road component",
-                {"package": PACKAGE_NAME, "value": raw_input},
+            street_like_labels = (
+                "road",
+                "house_number",
+                "po_box",
+                "suburb",
+                "city_district",
+                "neighbourhood",
+                "building",
+                "unit",
+                "level",
+                "staircase",
+                "entrance",
             )
+            for label in street_like_labels:
+                candidate = join(label)
+                if candidate:
+                    road = candidate
+                    break
 
         if not (city or state or postal_code or country):
             raise RyanDataAddressError(
                 "international_validation",
                 "International address missing location components",
+                {"package": PACKAGE_NAME, "value": raw_input},
+            )
+        if road is None:
+            raise RyanDataAddressError(
+                "international_validation",
+                "International address missing road component",
                 {"package": PACKAGE_NAME, "value": raw_input},
             )
 

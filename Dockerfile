@@ -16,6 +16,7 @@ RUN git clone https://github.com/openvenues/libpostal.git /tmp/libpostal \
     && rm -rf /tmp/libpostal
 
 WORKDIR /app
+ENV PYTHONUNBUFFERED=1
 
 # Allow overriding install ref (defaults to main)
 ARG RYANDATA_ADDR_UTILS_REF=main
@@ -30,6 +31,9 @@ RUN pip install --no-cache-dir \
 # Optional: copy source for local development/mounting (no-op unless mounted)
 COPY . /app
 
-# Default to Python shell; can override with CMD for API (see Make targets)
-CMD ["python"]
+EXPOSE 8000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD curl -fsS http://localhost:8000/health || exit 1
+
+# Default to serving the FastAPI app; override command for ad-hoc usage
+CMD ["uvicorn", "ryandata_address_utils.api:app", "--host", "0.0.0.0", "--port", "8000"]
 

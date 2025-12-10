@@ -1,0 +1,76 @@
+name: Version bump (uv)
+
+on:
+  workflow_dispatch:
+    inputs:
+      level:
+        description: "Version bump level (patch|minor|major)"
+        required: true
+        default: "patch"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
+
+      - name: Set up Python
+        run: uv python install 3.9
+
+      - name: Bump version with uv
+        run: uv version ${{ inputs.level }}
+
+      - name: Sync __version__ to pyproject version
+        run: |
+          VERSION=$(uv run python - <<'PY'
+            import re
+            import tomllib
+            from pathlib import Path
+
+            pyproject = tomllib.loads(Path("pyproject.toml").read_text())
+            version = pyproject["project"]["version"]
+
+            init_path = Path("src/ryandata_address_utils/__init__.py")
+            text = init_path.read_text()
+            new = re.sub(r'__version__ = "[^"]+"', f'__version__ = "{version}"', text)
+            init_path.write_text(new)
+            print(version)
+          PY
+          )
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Show changes
+        run: git status --short
+
+      - name: Commit and tag
+        env:
+          VERSION: ${{ env.VERSION }}
+        run: |
+          if git diff --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add pyproject.toml src/ryandata_address_utils/__init__.py
+          git commit -m "chore: bump version to $VERSION"
+          git tag "v$VERSION"
+          git push origin HEAD
+          git push origin "v$VERSION"

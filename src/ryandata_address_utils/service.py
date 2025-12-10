@@ -28,6 +28,7 @@ def _is_probably_international(address_string: str) -> bool:
 
     lower = address_string.lower()
     intl_keywords = [
+        # Countries / regions
         "united kingdom",
         "uk",
         "england",
@@ -53,11 +54,24 @@ def _is_probably_international(address_string: str) -> bool:
         "norway",
         "denmark",
         "finland",
+        "united arab emirates",
+        "uae",
+        # Major non-us cities (helps steer ambiguous inputs)
+        "london",
+        "tokyo",
+        "berlin",
+        "paris",
+        "dubai",
+        "abu dhabi",
     ]
 
     if any(keyword in lower for keyword in intl_keywords) and (
         "united states" not in lower and "usa" not in lower
     ):
+        return True
+
+    # APO/FPO/DPO military or diplomatic addresses should bypass US parsing
+    if any(token in lower for token in ("apo", "fpo", "dpo", "psc")):
         return True
 
     return bool(any(ord(ch) > 127 for ch in address_string))
