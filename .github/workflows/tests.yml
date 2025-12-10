@@ -62,7 +62,7 @@ jobs:
         run: uv sync --group dev --all-extras
 
       - name: Run tests
-        run: uv run pytest tests/ --cov --junitxml=junit.xml -o junit_family=legacy --cov=src/ryandata_address_utils --cov-report=xml --cov-report=term
+        run: uv run pytest tests/ -v --tb=short --cov=src/ryandata_address_utils --cov-report=xml --cov-report=term --junitxml=junit.xml -o junit_family=legacy
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -78,3 +78,7 @@ jobs:
         uses: codecov/test-results-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./junit.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
