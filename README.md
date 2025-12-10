@@ -55,6 +55,12 @@ make docker-run-api
 # curl "http://localhost:8000/parse_international?address=10%20Downing%20St,%20London"
 ```
 
+### International parsing (libpostal)
+- `parse_auto_route` (service) and `/parse_auto` (API) try US first, then libpostal if US validation fails.
+- Strict rules: international results must include a road plus at least one location element (city/state/postal/country) or parsing fails.
+- Returned structure includes `InternationalAddress` fields (`HouseNumber`, `Road`, `City`, `State`, `PostalCode`, `Country`, `CountryCode`) and raw libpostal `Components`.
+- Requires libpostal installed; the provided Docker image already bundles it. Outside Docker, install libpostal first.
+
 Notes:
 - Image name: `ghcr.io/abstract-data/ryandata-addr-utils-libpostal` (configurable via `DOCKER_IMAGE`, `DOCKER_TAG`, `DOCKER_REF`).
 - The image bundles libpostal; use it when you need international parsing without host installs.

@@ -7,8 +7,10 @@ from ryandata_address_utils.data import DataSourceFactory
 from ryandata_address_utils.models import (
     ADDRESS_FIELDS,
     PACKAGE_NAME,
+    InternationalAddress,
     ParseResult,
     RyanDataAddressError,
+    ValidationResult,
     ZipInfo,
 )
 from ryandata_address_utils.parsers import ParserFactory
@@ -107,6 +109,7 @@ class AddressService:
             or error information.
         """
         result = self._parser.parse(address_string)
+        result.source = "us"
 
         if validate and result.is_parsed and result.address is not None:
             result.validation = self._validator.validate(result.address)
@@ -131,6 +134,9 @@ class AddressService:
             List of ParseResult objects.
         """
         results = self._parser.parse_batch(addresses)
+
+        for result in results:
+            result.source = "us"
 
         if validate:
             for result in results:
@@ -251,28 +257,36 @@ class AddressService:
                 raw_input=address_string,
                 error=RuntimeError("libpostal not available"),
                 address=None,
+                international_address=None,
                 validation=None,
+                source="international",
             )
 
         try:
             parsed_tokens = lp_parse_address(address_string)
-            # Convert list of (value, label) tuples into a dict; labels may repeat
-            parsed_dict: dict[str, str] = {}
+            # Convert list of (value, label) tuples into a dict of lists to preserve duplicates
+            components: dict[str, list[str]] = {}
             for value, label in parsed_tokens:
-                if label in parsed_dict:
-                    parsed_dict[label] = f"{parsed_dict[label]} {value}"
-                else:
-                    parsed_dict[label] = value
+                components.setdefault(label, []).append(value)
 
-            # Return parsed tokens in address field for downstream use
+            intl_address = InternationalAddress.from_libpostal(address_string, components)
             return ParseResult(
                 raw_input=address_string,
-                address=parsed_dict,  # type: ignore
+                address=None,
+                international_address=intl_address,
                 error=None,
-                validation=None,
+                validation=ValidationResult(is_valid=True),
+                source="international",
             )
         except Exception as e:  # pragma: no cover
-            return ParseResult(raw_input=address_string, error=e)
+            return ParseResult(
+                raw_input=address_string,
+                error=e,
+                address=None,
+                international_address=None,
+                validation=ValidationResult(is_valid=False, errors=[]),
+                source="international",
+            )
 
     def parse_auto_route(self, address_string: str, *, validate: bool = True) -> ParseResult:
         """Try US parse first; if invalid and libpostal is available, fall back to international."""

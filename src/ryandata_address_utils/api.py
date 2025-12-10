@@ -8,11 +8,6 @@ from fastapi import FastAPI, HTTPException, Query
 
 from ryandata_address_utils.service import AddressService, parse
 
-try:
-    from postal.parser import parse_address as lp_parse_address
-except ImportError:
-    lp_parse_address = None
-
 app = FastAPI(title="RyanData Address Utils API", version="0.3.1")
 service = AddressService()
 
@@ -41,46 +36,67 @@ def parse_us_address(
 
 @app.get("/parse_international")
 def parse_international(address: str = Query(..., min_length=3)) -> dict[str, Any]:
-    """Parse an international address via libpostal, if available."""
-    if lp_parse_address is None:
-        raise HTTPException(status_code=501, detail="libpostal not available in this environment")
+    """Parse an international address via libpostal with strict validation."""
+    result = service.parse_international(address)
+    if result.error:
+        status = 501 if "libpostal not available" in str(result.error).lower() else 400
+        raise HTTPException(status_code=status, detail=str(result.error))
+    if not result.is_valid or result.international_address is None:
+        raise HTTPException(status_code=400, detail="International parse failed")
 
-    parsed = lp_parse_address(address)
-    # Convert list of (component, label) tuples into a dict of lists to preserve duplicates
-    components: dict[str, list[str]] = {}
-    for value, label in parsed:
-        components.setdefault(label, []).append(value)
-
-    return {"address": address, "components": components}
+    intl = result.international_address
+    return {
+        "mode": "international",
+        "is_valid": True,
+        "is_parsed": True,
+        "address": intl.to_dict(),
+        "components": intl.Components,
+        "errors": [],
+    }
 
 
 @app.get("/parse_auto")
 def parse_auto(address: str = Query(..., min_length=3), validate: bool = True) -> dict[str, Any]:
     """Auto route: try US parser first; if it fails and libpostal is available, fall back."""
-    us_result = parse(address, validate=validate)
-    if us_result.is_valid:
+    result = service.parse_auto_route(address, validate=validate)
+
+    if result.is_valid:
+        if result.source == "international":
+            intl = result.international_address
+            return {
+                "mode": "international",
+                "is_valid": True,
+                "is_parsed": True,
+                "address": intl.to_dict() if intl else None,
+                "components": intl.Components if intl else {},
+                "errors": [],
+            }
         return {
             "mode": "us",
             "is_valid": True,
             "is_parsed": True,
-            "address": us_result.to_dict(),
+            "address": result.to_dict(),
             "errors": [],
         }
 
-    if lp_parse_address is None:
+    if result.error:
+        status = 501 if "libpostal not available" in str(result.error).lower() else 400
+        raise HTTPException(status_code=status, detail=str(result.error))
+
+    if result.source == "international":
         return {
-            "mode": "us",
+            "mode": "international",
             "is_valid": False,
             "is_parsed": False,
-            "errors": ["US parse failed and libpostal is not available"],
+            "errors": ["International parse failed"],
         }
 
-    parsed = lp_parse_address(address)
-    components: dict[str, list[str]] = {}
-    for value, label in parsed:
-        components.setdefault(label, []).append(value)
-
-    return {"mode": "international", "is_valid": True, "is_parsed": True, "components": components}
+    return {
+        "mode": "us",
+        "is_valid": False,
+        "is_parsed": False,
+        "errors": ["US parse failed"],
+    }
 
 
 # To run: uvicorn ryandata_address_utils.api:app --host 0.0.0.0 --port 8000

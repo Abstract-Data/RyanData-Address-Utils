@@ -466,6 +466,85 @@ class Address(BaseModel):
                 )
 
 
+class InternationalAddress(BaseModel):
+    """Parsed international address components from libpostal."""
+
+    model_config = ConfigDict(
+        extra="ignore",
+        str_strip_whitespace=True,
+    )
+
+    RawInput: str
+    HouseNumber: Optional[str] = Field(default=None, description="House number")
+    Road: Optional[str] = Field(default=None, description="Street/road name")
+    City: Optional[str] = Field(default=None, description="City or locality")
+    State: Optional[str] = Field(default=None, description="State/region/province")
+    PostalCode: Optional[str] = Field(default=None, description="Postal/ZIP code")
+    Country: Optional[str] = Field(default=None, description="Country name")
+    CountryCode: Optional[str] = Field(default=None, description="Country code (if available)")
+    Components: dict[str, list[str]] = Field(
+        default_factory=dict,
+        description="Raw libpostal components (lists to preserve duplicates)",
+    )
+
+    def to_dict(self) -> dict[str, Optional[str]]:
+        """Convert international address to dictionary (excluding raw components)."""
+        return self.model_dump(exclude={"Components"})
+
+    @classmethod
+    def from_libpostal(
+        cls,
+        raw_input: str,
+        components: dict[str, list[str]],
+    ) -> InternationalAddress:
+        """Build InternationalAddress from libpostal components with strict validation."""
+
+        def join(label: str) -> Optional[str]:
+            values = components.get(label)
+            if not values:
+                return None
+            return " ".join(values)
+
+        if not components:
+            raise RyanDataAddressError(
+                "international_validation",
+                "No components parsed from libpostal",
+                {"package": PACKAGE_NAME, "value": raw_input},
+            )
+
+        road = join("road")
+        house_number = join("house_number")
+        city = join("city") or join("suburb")
+        state = join("state") or join("state_district")
+        postal_code = join("postcode")
+        country = join("country")
+
+        if road is None:
+            raise RyanDataAddressError(
+                "international_validation",
+                "International address missing road component",
+                {"package": PACKAGE_NAME, "value": raw_input},
+            )
+
+        if not (city or state or postal_code or country):
+            raise RyanDataAddressError(
+                "international_validation",
+                "International address missing location components",
+                {"package": PACKAGE_NAME, "value": raw_input},
+            )
+
+        return cls(
+            RawInput=raw_input,
+            HouseNumber=house_number,
+            Road=road,
+            City=city,
+            State=state,
+            PostalCode=postal_code,
+            Country=country,
+            Components=components,
+        )
+
+
 @dataclass
 class ZipInfo:
     """Information about a US ZIP code."""
@@ -512,13 +591,17 @@ class ParseResult:
 
     raw_input: str
     address: Optional[Address] = None
+    international_address: Optional[InternationalAddress] = None
     error: Optional[Exception] = None
     validation: Optional[ValidationResult] = None
+    source: Optional[str] = None  # "us" or "international"
 
     @property
     def is_valid(self) -> bool:
         """Check if parsing was successful and validation passed."""
-        if self.error is not None or self.address is None:
+        if self.error is not None:
+            return False
+        if self.address is None and self.international_address is None:
             return False
         if self.validation is not None:
             return self.validation.is_valid
@@ -527,12 +610,16 @@ class ParseResult:
     @property
     def is_parsed(self) -> bool:
         """Check if parsing was successful (regardless of validation)."""
-        return self.error is None and self.address is not None
+        return self.error is None and (
+            self.address is not None or self.international_address is not None
+        )
 
     def to_dict(self) -> dict[str, Optional[str]]:
         """Convert to dictionary of address fields."""
         if self.address:
             return self.address.to_dict()
+        if self.international_address:
+            return self.international_address.to_dict()
         return {f: None for f in ADDRESS_FIELDS}
 
 

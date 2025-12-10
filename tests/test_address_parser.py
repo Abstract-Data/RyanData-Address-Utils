@@ -8,6 +8,7 @@ from pydantic_core import PydanticCustomError
 from ryandata_address_utils import (
     AddressService,
     ParseResult,
+    RyanDataAddressError,
     get_zip_info,
     is_valid_state,
     is_valid_zip,
@@ -916,3 +917,44 @@ class TestAddressFormatting:
         assert "75201" in full
         # Should contain exactly 3 commas (addr1, city/state/zip)
         assert full.count(",") >= 1
+
+
+# =============================================================================
+# International routing via libpostal
+# =============================================================================
+
+
+def _require_libpostal() -> None:
+    pytest.importorskip("postal.parser")
+
+
+def test_parse_auto_us_success_sets_source() -> None:
+    service = AddressService()
+    result = service.parse_auto_route("123 Main St, Austin TX 78749", validate=True)
+    assert result.source == "us"
+    assert result.is_valid
+    assert result.address is not None
+    assert result.international_address is None
+
+
+def test_parse_auto_fallback_international_success() -> None:
+    _require_libpostal()
+    service = AddressService()
+    result = service.parse_auto_route("10 Downing St, London", validate=True)
+    assert result.source == "international"
+    assert result.is_valid
+    assert result.international_address is not None
+    assert result.international_address.Road is not None
+    assert (
+        result.international_address.City is not None
+        or result.international_address.Country is not None
+    )
+
+
+def test_parse_auto_international_missing_components_fails_strict() -> None:
+    _require_libpostal()
+    service = AddressService()
+    result = service.parse_auto_route("London", validate=True)
+    assert result.source == "international"
+    assert not result.is_valid
+    assert isinstance(result.error, RyanDataAddressError)
