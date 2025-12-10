@@ -22,6 +22,47 @@ try:
 except ImportError:
     lp_parse_address = None
 
+
+def _is_probably_international(address_string: str) -> bool:
+    """Lightweight heuristic to detect likely international addresses."""
+
+    lower = address_string.lower()
+    intl_keywords = [
+        "united kingdom",
+        "uk",
+        "england",
+        "scotland",
+        "wales",
+        "ireland",
+        "germany",
+        "france",
+        "japan",
+        "россия",
+        "russia",
+        "india",
+        "australia",
+        "brazil",
+        "canada",
+        "mexico",
+        "spain",
+        "italy",
+        "netherlands",
+        "belgium",
+        "switzerland",
+        "sweden",
+        "norway",
+        "denmark",
+        "finland",
+    ]
+
+    if any(keyword in lower for keyword in intl_keywords) and (
+        "united states" not in lower and "usa" not in lower
+    ):
+        return True
+
+    return bool(any(ord(ch) > 127 for ch in address_string))
+
+
 if TYPE_CHECKING:
     import pandas as pd
 
@@ -258,7 +299,7 @@ class AddressService:
                 error=RuntimeError("libpostal not available"),
                 address=None,
                 international_address=None,
-                validation=None,
+                validation=ValidationResult(is_valid=False, errors=[]),
                 source="international",
             )
 
@@ -289,13 +330,36 @@ class AddressService:
             )
 
     def parse_auto_route(self, address_string: str, *, validate: bool = True) -> ParseResult:
-        """Try US parse first; if invalid and libpostal is available, fall back to international."""
-        us_result = self.parse(address_string, validate=validate)
+        """Try US parse first; if invalid or fails and libpostal is available, fall back."""
+        # If clearly international, skip US path
+        if _is_probably_international(address_string) and lp_parse_address is not None:
+            return self.parse_international(address_string)
+
+        try:
+            us_result = self.parse(address_string, validate=validate)
+        except Exception as exc:
+            if lp_parse_address is not None:
+                intl_result = self.parse_international(address_string)
+                if intl_result.is_valid or intl_result.international_address is not None:
+                    return intl_result
+            # Return error as a ParseResult to avoid raising in auto route
+            return ParseResult(
+                raw_input=address_string,
+                address=None,
+                international_address=None,
+                error=exc,
+                validation=ValidationResult(is_valid=False, errors=[]),
+                source="us",
+            )
+
         if us_result.is_valid:
             return us_result
+
         if lp_parse_address is None:
             return us_result
-        return self.parse_international(address_string)
+
+        intl_result = self.parse_international(address_string)
+        return intl_result
 
     # -------------------------------------------------------------------------
     # Pandas integration methods

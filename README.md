@@ -60,6 +60,7 @@ make docker-run-api
 - Strict rules: international results must include a road plus at least one location element (city/state/postal/country) or parsing fails.
 - Returned structure includes `InternationalAddress` fields (`HouseNumber`, `Road`, `City`, `State`, `PostalCode`, `Country`, `CountryCode`) and raw libpostal `Components`.
 - Requires libpostal installed; the provided Docker image already bundles it. Outside Docker, install libpostal first.
+- Heuristics: if the input clearly names a non-US country or contains non-ASCII, it skips US parsing and goes straight to libpostal; otherwise, US is attempted first and any US validation failure triggers libpostal fallback.
 
 Notes:
 - Image name: `ghcr.io/abstract-data/ryandata-addr-utils-libpostal` (configurable via `DOCKER_IMAGE`, `DOCKER_TAG`, `DOCKER_REF`).

@@ -70,6 +70,7 @@ def parse_auto(address: str = Query(..., min_length=3), validate: bool = True) -
                 "address": intl.to_dict() if intl else None,
                 "components": intl.Components if intl else {},
                 "errors": [],
+                "source": result.source,
             }
         return {
             "mode": "us",
@@ -77,6 +78,7 @@ def parse_auto(address: str = Query(..., min_length=3), validate: bool = True) -
             "is_parsed": True,
             "address": result.to_dict(),
             "errors": [],
+            "source": result.source,
         }
 
     if result.error:
@@ -89,6 +91,7 @@ def parse_auto(address: str = Query(..., min_length=3), validate: bool = True) -
             "is_valid": False,
             "is_parsed": False,
             "errors": ["International parse failed"],
+            "source": result.source,
         }
 
     return {
@@ -96,6 +99,7 @@ def parse_auto(address: str = Query(..., min_length=3), validate: bool = True) -
         "is_valid": False,
         "is_parsed": False,
         "errors": ["US parse failed"],
+        "source": result.source,
     }
 
 
