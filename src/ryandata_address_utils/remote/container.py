@@ -59,9 +59,7 @@ def _wait_for_health(url: str, *, timeout: float = 60.0) -> None:
     )
 
 
-def ensure_libpostal_container(
-    config: LibpostalContainerConfig, *, timeout: float = 60.0
-) -> str:
+def ensure_libpostal_container(config: LibpostalContainerConfig, *, timeout: float = 60.0) -> str:
     """Ensure a libpostal API container is running and healthy.
 
     Returns:

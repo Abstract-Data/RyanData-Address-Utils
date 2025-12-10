@@ -29,6 +29,11 @@ jobs:
       - name: Set up Python
         run: uv python install ${{ matrix.python-version }}
 
+      - name: Install libpostal system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpostal-dev libpostal-data
+
       - name: Install dependencies
         run: uv sync --group dev --all-extras
 
