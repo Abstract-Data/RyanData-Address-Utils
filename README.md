@@ -4,102 +4,65 @@
 [![Ruff](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/lint.yml/badge.svg)](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/lint.yml)
 [![MyPy](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/typecheck.yml/badge.svg)](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/typecheck.yml)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![uv](https://img.shields.io/badge/packaging-uv-9055ff.svg)](https://github.com/astral-sh/uv)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A Python address parser built for Ryan Data that uses `usaddress` to parse US addresses into structured Pydantic models with ZIP code and state validation.
+Parse and validate US addresses with Pydantic models, ZIP/state validation, pandas integration, and semantic-release powered CI.
 
-## Installation
+## Highlights
 
-### Using pip
+- Structured parsing of US addresses into 26 components with Pydantic models
+- ZIP and state validation backed by authoritative datasets
+- Pandas-friendly parsing for batch workloads
+- Custom errors (`RyanDataAddressError`, `RyanDataValidationError`) with package context
+- Builder API for programmatic address construction
+- Semantic-release CI for automated tagging and releases
 
-```bash
-pip install git+https://github.com/Abstract-Data/RyanData-Address-Utils.git
-```
+## Install
 
-With pandas support:
-
-```bash
-pip install "ryandata-address-utils[pandas] @ git+https://github.com/Abstract-Data/RyanData-Address-Utils.git"
-```
-
-### Using uv
-
+### uv (recommended)
 ```bash
 uv add git+https://github.com/Abstract-Data/RyanData-Address-Utils.git
-```
-
-With pandas support:
-
-```bash
+# with pandas extras
 uv add "ryandata-address-utils[pandas] @ git+https://github.com/Abstract-Data/RyanData-Address-Utils.git"
 ```
 
-Or from local directory:
-
+### pip
 ```bash
-git clone https://github.com/Abstract-Data/RyanData-Address-Utils.git
-cd RyanData-Address-Utils
-uv sync
+pip install git+https://github.com/Abstract-Data/RyanData-Address-Utils.git
+pip install "ryandata-address-utils[pandas] @ git+https://github.com/Abstract-Data/RyanData-Address-Utils.git"
 ```
 
-## Quick Start
+## Quick start
 
 ```python
 from ryandata_address_utils import AddressService, parse
 
-# Simple parsing
 result = parse("123 Main St, Austin TX 78749")
-
 if result.is_valid:
-    print(result.address.StreetName)   # "Main"
-    print(result.address.ZipCode)      # "78749"
-    print(result.to_dict())            # All fields as dict
+    print(result.address.ZipCode)   # "78749"
+    print(result.to_dict())         # full address dict
 else:
-    print(result.validation.errors)
+    print(result.validation.errors) # custom errors with context
 
-# Or use the full service
 service = AddressService()
-result = service.parse("456 Oak Ave, Dallas TX 75201")
+service.parse("456 Oak Ave, Dallas TX 75201")
 ```
 
-## Key Features
-
-- **Parse US addresses** into 26 structured components
-- **Validate ZIP codes** against real US ZIP code database (~33,000 ZIPs)
-- **Validate states** - abbreviations and full names
-- **Pandas integration** for batch processing
-- **Extensible architecture** - swap parsers, data sources, validators
-- **Builder pattern** for programmatic address constructionYes
-
-## Pandas Integration
+## Pandas integration
 
 ```python
 import pandas as pd
 from ryandata_address_utils import AddressService
 
-df = pd.DataFrame({
-    "address": [
-        "123 Main St, Austin TX 78749",
-        "456 Oak Ave, Dallas TX 75201",
-    ]
-})
-
+df = pd.DataFrame({"address": ["123 Main St, Austin TX 78749", "456 Oak Ave, Dallas TX 75201"]})
 service = AddressService()
-result = service.parse_dataframe(df, "address") # <-- This is where your named address column goes, and then it'll parse and add the split cols to the dataframe
-print(result[["AddressNumber", "StreetName", "ZipCode"]])
+
+parsed = service.parse_dataframe(df, "address", prefix="addr_")
+print(parsed[["addr_AddressNumber", "addr_StreetName", "addr_ZipCode"]])
 ```
 
-### Options
-
-```python
-# Skip validation (for non-US addresses)
-result = service.parse("123 Main St", validate=False)
-
-# Add prefix to new columns
-result = service.parse_dataframe(df, "address", prefix="addr_")
-```
-
-## Build Addresses Programmatically
+## Programmatic build
 
 ```python
 from ryandata_address_utils import AddressBuilder
@@ -116,139 +79,36 @@ address = (
 )
 ```
 
-## API Reference
+## Workflow at a glance
 
-### AddressService (Main Interface)
-
-```python
-from ryandata_address_utils import AddressService
-
-service = AddressService()
-
-# Parse single address
-result = service.parse("123 Main St, Austin TX 78749")
-result.is_valid       # True if parsing and validation succeeded
-result.address        # Address model
-result.validation     # ValidationResult with any errors
-
-# Parse batch
-results = service.parse_batch(["addr1", "addr2", "addr3"])
-
-# Parse DataFrame
-df = service.parse_dataframe(df, "address_column")
-
-# ZIP lookups
-info = service.lookup_zip("78749")
-city, state = service.get_city_state_from_zip("78749")
+```mermaid
+flowchart LR
+    parseStep[Parse] --> validateStep[Validate ZIP/State]
+    validateStep --> testsStep[Tests & Lint]
+    testsStep --> releaseStep[semantic-release]
+    releaseStep --> githubRelease[GitHub Release + Artifacts]
 ```
 
-### Address Model Fields
+## APIs you get
 
-| Field | Description | Example |
-|-------|-------------|---------|
-| `AddressNumber` | Street number | "123" |
-| `StreetName` | Street name | "Main" |
-| `StreetNamePostType` | Street type | "St", "Ave" |
-| `StreetNamePreDirectional` | Direction before | "North" |
-| `StreetNamePostDirectional` | Direction after | "SE" |
-| `SubaddressType` | Unit type | "Apt", "Suite" |
-| `SubaddressIdentifier` | Unit number | "2B" |
-| `PlaceName` | City | "Austin" |
-| `StateName` | State (validated) | "TX" |
-| `ZipCode` | ZIP (validated) | "78749" |
-| `USPSBoxType` | PO Box type | "PO Box" |
-| `USPSBoxID` | PO Box number | "1234" |
+- `AddressService`: parse single, batch, DataFrame; look up ZIP/state; validate
+- `parse(...)`: convenience wrapper returning `ParseResult`
+- ZIP utilities: `get_city_state_from_zip`, `get_zip_info`, `is_valid_zip`, `is_valid_state`, `normalize_state`
+- Builder: `AddressBuilder` for programmatic address construction
 
-### ZIP Code Utilities
-
-```python
-from ryandata_address_utils import (
-    get_city_state_from_zip,
-    get_zip_info,
-    is_valid_zip,
-    is_valid_state,
-    normalize_state,
-)
-
-# Look up city/state from ZIP
-city, state = get_city_state_from_zip("78749")  # ("Austin", "TX")
-
-# Get detailed ZIP info
-info = get_zip_info("78749")
-print(info.city, info.state_id, info.county_name)
-
-# Validation
-is_valid_zip("78749")     # True
-is_valid_state("Texas")   # True
-normalize_state("Texas")  # "TX"
-```
-
-## Extensible Architecture
-
-The package uses Protocols and Factories for extensibility:
-
-```python
-from ryandata_address_utils import (
-    AddressService,
-    ParserFactory,
-    DataSourceFactory,
-)
-
-# Use custom data source
-custom_source = DataSourceFactory.create("csv", csv_path="/path/to/zips.csv")
-service = AddressService(data_source=custom_source)
-
-# Register custom parser
-ParserFactory.register("custom", MyCustomParser)
-parser = ParserFactory.create("custom")
-```
-
-## Development
-
-### Using uv (Recommended)
+## Development (uv)
 
 ```bash
 git clone https://github.com/Abstract-Data/RyanData-Address-Utils.git
 cd RyanData-Address-Utils
-
-# Install with dev dependencies
 uv sync
-
-# Run tests
 uv run pytest
-
-# Run linter
 uv run ruff check src/
-
-# Run type checker
 uv run mypy src/
-
-# Format code
 uv run ruff format src/
 ```
 
-### Using pip + Makefile
-
-```bash
-git clone https://github.com/Abstract-Data/RyanData-Address-Utils.git
-cd RyanData-Address-Utils
-
-# Install with dev dependencies
-make install-dev
-
-# Run tests
-make test
-
-# Run linter
-make lint
-
-# Run type checker
-make typecheck
-
-# Format code
-make format
-```
-
-## License
-
-MIT
+## Contributing and support
+- Issues: https://github.com/Abstract-Data/RyanData-Address-Utils/issues
+- Releases/notes: https://github.com/Abstract-Data/RyanData-Address-Utils/releases
+- License: MIT
