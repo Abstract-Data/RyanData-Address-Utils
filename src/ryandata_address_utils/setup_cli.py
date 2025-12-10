@@ -205,6 +205,7 @@ def ensure_postal_binding(*, dry_run: bool = False) -> None:
     """Ensure the Python bindings are installed; if missing, guide installation."""
     try:
         import postal  # noqa: F401
+
         return
     except ImportError:
         typer.echo("Python binding 'postal' not found.")

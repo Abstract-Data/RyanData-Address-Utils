@@ -405,7 +405,7 @@ class AddressService:
                 international_address=None,
                 validation=ValidationResult(is_valid=False, errors=[]),
                 source="international",
-            is_international=True,
+                is_international=True,
             )
 
         try:
@@ -435,7 +435,7 @@ class AddressService:
                 error=None,
                 validation=ValidationResult(is_valid=True),
                 source="international",
-            is_international=True,
+                is_international=True,
             )
         except Exception as e:  # pragma: no cover
             return ParseResult(
@@ -445,7 +445,7 @@ class AddressService:
                 international_address=None,
                 validation=ValidationResult(is_valid=False, errors=[]),
                 source="international",
-            is_international=True,
+                is_international=True,
             )
 
     def parse_auto(self, address_string: str, *, validate: bool = True) -> ParseResult:

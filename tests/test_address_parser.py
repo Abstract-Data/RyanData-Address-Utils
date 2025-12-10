@@ -973,9 +973,7 @@ def test_parse_auto_international_skips_us_when_probably_international() -> None
 def test_parse_auto_fallback_on_us_validation_error() -> None:
     _require_libpostal()
     service = AddressService()
-    result = service.parse_auto(
-        "1-1-2 Oshiage, Sumida-ku, Tokyo 131-0045, Japan", validate=True
-    )
+    result = service.parse_auto("1-1-2 Oshiage, Sumida-ku, Tokyo 131-0045, Japan", validate=True)
     assert result.source == "international"
     assert result.is_valid
     assert result.international_address is not None
