@@ -84,7 +84,7 @@ from ryandata_address_utils.validation import (
     ZipCodeValidator,
 )
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 __package_name__ = "ryandata-address-utils"
 
 __all__ = [
