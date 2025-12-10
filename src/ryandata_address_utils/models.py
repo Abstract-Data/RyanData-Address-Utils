@@ -490,6 +490,10 @@ class InternationalAddress(BaseModel):
         default="",
         description="Complete formatted address string derived from parsed components",
     )
+    NormalizedAddresses: list[str] = Field(
+        default_factory=list,
+        description="libpostal normalized forms of the raw input (if available)",
+    )
     Components: dict[str, list[str]] = Field(
         default_factory=dict,
         description="Raw libpostal components (lists to preserve duplicates)",
@@ -504,6 +508,7 @@ class InternationalAddress(BaseModel):
         cls,
         raw_input: str,
         components: dict[str, list[str]],
+        normalized_addresses: Optional[list[str]] = None,
     ) -> InternationalAddress:
         """Build InternationalAddress from libpostal components with strict validation."""
 
@@ -582,6 +587,7 @@ class InternationalAddress(BaseModel):
             Country=country,
             Components=components,
             FullAddress=build_full_address(),
+            NormalizedAddresses=normalized_addresses or [],
         )
 
 

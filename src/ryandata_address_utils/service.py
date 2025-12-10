@@ -20,8 +20,10 @@ from ryandata_address_utils.validation.validators import create_default_validato
 # Optional libpostal import for international parsing
 try:
     from postal.parser import parse_address as lp_parse_address
+    from postal.expand import expand_address as lp_expand_address
 except ImportError:
     lp_parse_address = None
+    lp_expand_address = None
 
 
 def _is_probably_international(address_string: str) -> bool:
@@ -90,6 +92,25 @@ def _international_to_address(intl: InternationalAddress) -> Address:
         "IsInternational": True,
     }
     return Address.model_validate(data)
+
+
+def _looks_like_us(address_string: str, data_source) -> bool:
+    """Lightweight check to keep US-looking inputs on the US path."""
+
+    lower = address_string.lower()
+    if "united states" in lower or "usa" in lower:
+        return True
+
+    tokens = ["".join(ch for ch in part if ch.isalnum()).upper() for part in lower.split()]
+    tokens = [t for t in tokens if t]
+    for t in tokens:
+        if len(t) == 5 and t.isdigit():
+            return True
+        if len(t) == 2 and data_source.is_valid_state(t):
+            return True
+        if data_source.is_valid_state(t):
+            return True
+    return False
 
 
 if TYPE_CHECKING:
@@ -341,7 +362,18 @@ class AddressService:
             for value, label in parsed_tokens:
                 components.setdefault(label, []).append(value)
 
-            intl_address = InternationalAddress.from_libpostal(address_string, components)
+            normalized_addresses: list[str] = []
+            if lp_expand_address is not None:
+                try:
+                    normalized_addresses = lp_expand_address(address_string)
+                except Exception:
+                    normalized_addresses = []
+
+            intl_address = InternationalAddress.from_libpostal(
+                address_string,
+                components,
+                normalized_addresses=normalized_addresses,
+            )
             addr_from_intl = _international_to_address(intl_address)
             return ParseResult(
                 raw_input=address_string,
@@ -375,7 +407,9 @@ class AddressService:
             if lp_parse_address is not None:
                 intl_result = self.parse_international(address_string)
                 if intl_result.is_valid or intl_result.international_address is not None:
-                    intl_result.is_international = True
+                    intl_result.is_international = not _looks_like_us(address_string, self._data_source)
+                    if intl_result.address:
+                        intl_result.address.IsInternational = intl_result.is_international
                     return intl_result
             # Return error as a ParseResult to avoid raising in auto route
             return ParseResult(
@@ -395,7 +429,9 @@ class AddressService:
             return us_result
 
         intl_result = self.parse_international(address_string)
-        intl_result.is_international = True
+        intl_result.is_international = not _looks_like_us(address_string, self._data_source)
+        if intl_result.address:
+            intl_result.address.IsInternational = intl_result.is_international
         return intl_result
 
     # -------------------------------------------------------------------------
