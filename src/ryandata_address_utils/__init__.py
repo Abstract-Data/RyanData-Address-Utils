@@ -42,23 +42,6 @@ from __future__ import annotations
 
 from typing import Optional
 
-# Dynamic version from package metadata
-# Use a more robust approach that doesn't fail on import
-try:
-    from importlib.metadata import PackageNotFoundError, version
-
-    try:
-        __version__ = version("ryandata-address-utils")
-    except (PackageNotFoundError, Exception):
-        # Package is not installed, or metadata unavailable
-        # Fall back to hardcoded version
-        __version__ = "0.2.0"
-except ImportError:
-    # Python < 3.8 fallback (though we require 3.9+, this is defensive)
-    __version__ = "0.2.0"
-
-__package_name__ = "ryandata-address-utils"
-
 # Imports grouped by type and sorted
 from ryandata_address_utils.data import (
     BaseDataSource,
@@ -75,6 +58,8 @@ from ryandata_address_utils.models import (
     AddressBuilder,
     AddressField,
     ParseResult,
+    RyanDataAddressError,
+    RyanDataValidationError,
     ValidationError,
     ValidationResult,
     ZipInfo,
@@ -99,6 +84,9 @@ from ryandata_address_utils.validation import (
     ZipCodeValidator,
 )
 
+__version__ = "0.3.0"
+__package_name__ = "ryandata-address-utils"
+
 __all__ = [
     # Version
     "__version__",
@@ -112,6 +100,8 @@ __all__ = [
     "AddressField",
     "ADDRESS_FIELDS",
     "ParseResult",
+    "RyanDataAddressError",
+    "RyanDataValidationError",
     "ValidationError",
     "ValidationResult",
     "ZipInfo",

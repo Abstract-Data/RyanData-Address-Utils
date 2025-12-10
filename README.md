@@ -1,46 +1,24 @@
 # RyanData Address Utils
 
-[![Tests](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/tests.yml/badge.svg)](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/tests.yml)
-[![Ruff](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/lint.yml/badge.svg)](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/lint.yml)
-[![Mypy](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/typecheck.yml/badge.svg)](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/typecheck.yml)
-[![Python 3.9-3.13](https://img.shields.io/badge/python-3.9--3.13-blue.svg)](https://www.python.org/downloads/)
+[![CI](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/ci.yml/badge.svg)](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/ci.yml)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](https://mypy-lang.org/)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A Python address parser built for Ryan Data that uses `usaddress` to parse US addresses into structured Pydantic models with ZIP code and state validation.
 
 ## Installation
 
-Install the latest development version:
-
 ```bash
-uv add git+https://github.com/Abstract-Data/RyanData-Address-Utils.git
-```
-
-Install a specific version (recommended for production):
-
-```bash
-# Install a specific release version
-uv add git+https://github.com/Abstract-Data/RyanData-Address-Utils.git@v0.2.0
-
-# Install latest from main branch
-uv add git+https://github.com/Abstract-Data/RyanData-Address-Utils.git@main
+pip install git+https://github.com/Abstract-Data/RyanData-Address-Utils.git
 ```
 
 With pandas support:
 
 ```bash
-uv add "git+https://github.com/Abstract-Data/RyanData-Address-Utils.git[pandas]"
+pip install "ryandata-address-utils[pandas] @ git+https://github.com/Abstract-Data/RyanData-Address-Utils.git"
 ```
-
-For specific version with pandas:
-
-```bash
-uv add "git+https://github.com/Abstract-Data/RyanData-Address-Utils.git@v0.2.0[pandas]"
-```
-
-### Available Releases
-
-See [GitHub Releases](https://github.com/Abstract-Data/RyanData-Address-Utils/releases) for all available versions and changelog.
 
 ## Quick Start
 
@@ -218,28 +196,6 @@ make test
 # Run linter
 make lint
 ```
-
-## Versioning
-
-This project follows [Semantic Versioning](https://semver.org/). Version bumps are automated based on [Conventional Commits](https://www.conventionalcommits.org/):
-
-- `feat:` commits trigger a minor version bump
-- `fix:` commits trigger a patch version bump
-- `BREAKING CHANGE:` in commit footer triggers a major version bump
-- `chore:`, `docs:`, `refactor:` commits don't trigger version bumps
-
-### Release Process
-
-1. Commits following conventional commits are pushed to `main`
-2. GitHub Actions automatically:
-   - Detects version bump requirements
-   - Updates version in `pyproject.toml`
-   - Creates git tag (e.g., `v0.2.1`)
-   - Builds distribution packages (wheel + sdist)
-   - Creates GitHub release with changelog
-   - Uploads artifacts
-
-See [GitHub Actions Releases](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/release.yml) to view release automation.
 
 ## License
 

@@ -3,6 +3,7 @@ import contextlib
 import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
+from pydantic_core import PydanticCustomError
 
 from ryandata_address_utils import (
     AddressService,
@@ -367,12 +368,9 @@ class TestZipCodeEdgeCases:
         assert isinstance(result, bool)
 
     def test_invalid_zip_raises_on_parse(self) -> None:
-        """Parsing with invalid ZIP should have validation errors."""
-        result = parse("123 Main St, Austin TX 00000")
-        assert not result.is_valid
-        assert result.validation is not None
-        errors = [e.message for e in result.validation.errors]
-        assert any("Invalid US ZIP code" in msg for msg in errors)
+        """Parsing with invalid ZIP should raise PydanticCustomError."""
+        with pytest.raises(PydanticCustomError, match="Invalid US ZIP code"):
+            parse("123 Main St, Austin TX 00000")
 
     def test_invalid_zip_allowed_without_validation(self) -> None:
         """Invalid ZIP should work with validate=False."""
@@ -410,12 +408,9 @@ class TestStateEdgeCases:
             assert is_valid_state(territory), f"{territory} should be valid"
 
     def test_invalid_state_raises_on_parse(self) -> None:
-        """Parsing with invalid state should have validation errors."""
-        result = parse("123 Main St, Austin XX 78749")
-        assert not result.is_valid
-        assert result.validation is not None
-        errors = [e.message for e in result.validation.errors]
-        assert any("Invalid US state" in msg for msg in errors)
+        """Parsing with invalid state should raise PydanticCustomError."""
+        with pytest.raises(PydanticCustomError, match="Invalid US state"):
+            parse("123 Main St, Austin XX 78749")
 
 
 # =============================================================================
@@ -621,11 +616,9 @@ class TestValidationToggle:
     """Test the validate parameter."""
 
     def test_validation_on_by_default(self) -> None:
-        """Validation should be on by default."""
-        result = parse("123 Main St, Austin XX 00000")
-        assert not result.is_valid
-        assert result.validation is not None
-        assert len(result.validation.errors) > 0
+        """Validation should be on by default and raise exceptions for invalid data."""
+        with pytest.raises(PydanticCustomError):
+            parse("123 Main St, Austin XX 00000")
 
     def test_validation_can_be_disabled(self) -> None:
         """Validation can be disabled."""

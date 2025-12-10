@@ -1,6 +1,6 @@
 [project]
 name = "ryandata-address-utils"
-version = "0.2.0"
+version = "0.3.0"
 description = "A Python address parser using usaddress with Pydantic models, validation, and extensible architecture"
 readme = "README.md"
 license = { text = "MIT" }
@@ -47,7 +47,6 @@ dev = [
     "mypy>=1.13.0",
     "pytest>=8.0.0",
     "hypothesis>=6.0.0",
-    "python-semantic-release>=9.0.0",
 ]
 
 [build-system]
@@ -84,8 +83,3 @@ warn_return_any = true
 warn_unused_ignores = true
 disallow_untyped_defs = true
 ignore_missing_imports = true
-
-[tool.semantic_release]
-version_source = "tag"
-tag_format = "v{version}"
-build_command = "pip install build && python -m build"

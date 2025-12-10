@@ -4,7 +4,13 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING, Optional
 
 from ryandata_address_utils.data import DataSourceFactory
-from ryandata_address_utils.models import ADDRESS_FIELDS, ParseResult, ZipInfo
+from ryandata_address_utils.models import (
+    ADDRESS_FIELDS,
+    PACKAGE_NAME,
+    ParseResult,
+    RyanDataAddressError,
+    ZipInfo,
+)
 from ryandata_address_utils.parsers import ParserFactory
 from ryandata_address_utils.validation.validators import create_default_validators
 
@@ -98,6 +104,8 @@ class AddressService:
 
         if validate and result.is_parsed and result.address is not None:
             result.validation = self._validator.validate(result.address)
+            # Check for ZIP/state validation errors and raise PydanticCustomError
+            result.address.validate_external_results(result.validation)
 
         return result
 
@@ -122,6 +130,8 @@ class AddressService:
             for result in results:
                 if result.is_parsed and result.address is not None:
                     result.validation = self._validator.validate(result.address)
+                    # Check for ZIP/state validation errors and raise PydanticCustomError
+                    result.address.validate_external_results(result.validation)
 
         return results
 
@@ -145,7 +155,7 @@ class AddressService:
             Dictionary mapping field names to values.
 
         Raises:
-            ValueError: If parsing fails and errors="raise".
+            PydanticCustomError: If parsing fails and errors="raise".
         """
         result = self.parse(address_string, validate=validate)
 
@@ -154,8 +164,14 @@ class AddressService:
                 if result.error:
                     raise result.error
                 if result.validation and not result.validation.is_valid:
+                    # Re-raise the first validation error if it's a PydanticCustomError
+                    # This is already raised in parse() via validate_external_results()
                     error_msgs = [e.message for e in result.validation.errors]
-                    raise ValueError(f"Validation failed: {'; '.join(error_msgs)}")
+                    raise RyanDataAddressError(
+                        "validation_error",
+                        f"Validation failed: {'; '.join(error_msgs)}",
+                        {"package": PACKAGE_NAME},
+                    )
             return {f: None for f in ADDRESS_FIELDS}
 
         return result.to_dict()
@@ -248,7 +264,11 @@ class AddressService:
         elif errors == "raise":
             if result.error:
                 raise result.error
-            raise ValueError("Validation failed")
+            raise RyanDataAddressError(
+                "validation_error",
+                "Validation failed",
+                {"package": PACKAGE_NAME},
+            )
         else:
             return pd.Series({field: None for field in ADDRESS_FIELDS})
 

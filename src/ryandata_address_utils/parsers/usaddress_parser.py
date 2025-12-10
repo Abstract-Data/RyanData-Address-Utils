@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import usaddress
 
-from ryandata_address_utils.models import Address
+from ryandata_address_utils.models import PACKAGE_NAME, Address, RyanDataAddressError
 from ryandata_address_utils.parsers.base import BaseAddressParser
 
 
@@ -61,12 +61,16 @@ class USAddressParser(BaseAddressParser):
             Parsed Address object.
 
         Raises:
-            ValueError: If parsing fails due to other issues.
+            RyanDataAddressError: If parsing fails.
         """
         try:
             parsed_tokens = usaddress.parse(address_string)
         except Exception as e:
-            raise ValueError(f"Failed to parse address: {e}") from e
+            raise RyanDataAddressError(
+                "address_parsing",
+                f"Failed to parse address: {e}",
+                {"package": PACKAGE_NAME, "input": address_string},
+            ) from e
 
         # Merge consecutive tokens with the same label
         parsed_address = self._merge_consecutive_labels(parsed_tokens)
