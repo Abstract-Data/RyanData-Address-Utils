@@ -257,20 +257,26 @@ class AddressService:
         """
         import pandas as pd
 
-        result = self.parse(address_string, validate=validate)
+        try:
+            result = self.parse(address_string, validate=validate)
 
-        if result.is_valid:
-            return pd.Series(result.to_dict())
-        elif errors == "raise":
-            if result.error:
-                raise result.error
-            raise RyanDataAddressError(
-                "validation_error",
-                "Validation failed",
-                {"package": PACKAGE_NAME},
-            )
-        else:
-            return pd.Series({field: None for field in ADDRESS_FIELDS})
+            if result.is_valid:
+                return pd.Series(result.to_dict())
+            elif errors == "raise":
+                if result.error:
+                    raise result.error
+                raise RyanDataAddressError(
+                    "validation_error",
+                    "Validation failed",
+                    {"package": PACKAGE_NAME},
+                )
+            else:
+                return pd.Series({field: None for field in ADDRESS_FIELDS})
+        except Exception as e:
+            if errors == "raise":
+                raise
+            else:
+                return pd.Series({field: None for field in ADDRESS_FIELDS})
 
     def parse_dataframe(
         self,
