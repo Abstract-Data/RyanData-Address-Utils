@@ -781,9 +781,7 @@ class TestAddressFormatting:
         """FullAddress should work with only city, state, zip."""
         from ryandata_address_utils.models import AddressBuilder
 
-        address = (
-            AddressBuilder().with_city("Austin").with_state("TX").with_zip("78749").build()
-        )
+        address = AddressBuilder().with_city("Austin").with_state("TX").with_zip("78749").build()
         full_address = address.FullAddress
         assert "Austin" in full_address
         assert "TX" in full_address
