@@ -33,6 +33,31 @@ pip install git+https://github.com/Abstract-Data/RyanData-Address-Utils.git
 pip install "ryandata-address-utils[pandas] @ git+https://github.com/Abstract-Data/RyanData-Address-Utils.git"
 ```
 
+## Docker (libpostal-ready, “clone and go”)
+
+Build (with libpostal and this package installed from the chosen ref):
+```bash
+make docker-build            # builds ghcr.io/abstract-data/ryandata-addr-utils-libpostal:latest
+make docker-test             # quick parse inside container
+```
+
+Shell into the image:
+```bash
+make docker-shell
+```
+
+Run the optional API (FastAPI) on port 8000:
+```bash
+make docker-run-api
+# Then call: curl "http://localhost:8000/parse?address=123%20Main%20St,%20Austin%20TX%2078749"
+# International (if libpostal available in image):
+# curl "http://localhost:8000/parse_international?address=10%20Downing%20St,%20London"
+```
+
+Notes:
+- Image name: `ghcr.io/abstract-data/ryandata-addr-utils-libpostal` (configurable via `DOCKER_IMAGE`, `DOCKER_TAG`, `DOCKER_REF`).
+- The image bundles libpostal; use it when you need international parsing without host installs.
+
 ## Quick start
 
 ```python

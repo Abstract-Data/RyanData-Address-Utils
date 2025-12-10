@@ -14,6 +14,12 @@ from ryandata_address_utils.models import (
 from ryandata_address_utils.parsers import ParserFactory
 from ryandata_address_utils.validation.validators import create_default_validators
 
+# Optional libpostal import for international parsing
+try:
+    from postal.parser import parse_address as lp_parse_address
+except ImportError:
+    lp_parse_address = None
+
 if TYPE_CHECKING:
     import pandas as pd
 
@@ -233,6 +239,49 @@ class AddressService:
             Two-letter state abbreviation if valid, None otherwise.
         """
         return self._data_source.normalize_state(state)
+
+    # -------------------------------------------------------------------------
+    # International / libpostal parsing
+    # -------------------------------------------------------------------------
+
+    def parse_international(self, address_string: str) -> ParseResult:
+        """Parse an address using libpostal if available."""
+        if lp_parse_address is None:
+            return ParseResult(
+                raw_input=address_string,
+                error=RuntimeError("libpostal not available"),
+                address=None,
+                validation=None,
+            )
+
+        try:
+            parsed_tokens = lp_parse_address(address_string)
+            # Convert list of (value, label) tuples into a dict; labels may repeat
+            parsed_dict: dict[str, str] = {}
+            for value, label in parsed_tokens:
+                if label in parsed_dict:
+                    parsed_dict[label] = f"{parsed_dict[label]} {value}"
+                else:
+                    parsed_dict[label] = value
+
+            # Return parsed tokens in address field for downstream use
+            return ParseResult(
+                raw_input=address_string,
+                address=parsed_dict,  # type: ignore
+                error=None,
+                validation=None,
+            )
+        except Exception as e:  # pragma: no cover
+            return ParseResult(raw_input=address_string, error=e)
+
+    def parse_auto_route(self, address_string: str, *, validate: bool = True) -> ParseResult:
+        """Try US parse first; if invalid and libpostal is available, fall back to international."""
+        us_result = self.parse(address_string, validate=validate)
+        if us_result.is_valid:
+            return us_result
+        if lp_parse_address is None:
+            return us_result
+        return self.parse_international(address_string)
 
     # -------------------------------------------------------------------------
     # Pandas integration methods
