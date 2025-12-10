@@ -37,10 +37,14 @@ jobs:
           git clone https://github.com/openvenues/libpostal.git /tmp/libpostal
           cd /tmp/libpostal
           ./bootstrap.sh
-          ./configure --datadir=/usr/local/share/libpostal
+          ./configure --prefix="$HOME/.local" --datadir="$HOME/.local/share/libpostal"
           make
-          sudo make install
-          sudo ldconfig
+          make install
+          # Export paths so subsequent steps can find libpostal
+          echo "LIBPOSTAL_DATA_DIR=$HOME/.local/share/libpostal" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=$HOME/.local/lib:${LD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
+          echo "PKG_CONFIG_PATH=$HOME/.local/lib/pkgconfig:${PKG_CONFIG_PATH:-}" >> "$GITHUB_ENV"
+          echo "CPATH=$HOME/.local/include:${CPATH:-}" >> "$GITHUB_ENV"
 
       - name: Install dependencies
         run: uv sync --group dev --all-extras
