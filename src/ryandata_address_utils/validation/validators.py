@@ -42,20 +42,22 @@ class ZipCodeValidator(BaseValidator):
         """
         result = ValidationResult(is_valid=True)
 
-        if address.ZipCode is None:
+        if address.ZipCodeFull is None and address.ZipCode5 is None:
             # No ZIP code to validate
             return result
 
-        # Clean the ZIP code (handle ZIP+4)
-        zip_clean = address.ZipCode.split("-")[0].strip()
+        # Prefer ZipCode5 for lookup
+        zip_clean = (address.ZipCode5 or "").strip()
+        if not zip_clean and address.ZipCodeFull:
+            zip_clean = address.ZipCodeFull.split("-")[0].strip()
 
         # Check if ZIP exists
         zip_info = self._data_source.get_zip_info(zip_clean)
         if zip_info is None:
             result.add_error(
                 field="ZipCode",
-                message=f"Invalid US ZIP code: {address.ZipCode}",
-                value=address.ZipCode,
+                message=f"Invalid US ZIP code: {address.ZipCodeFull or address.ZipCode}",
+                value=address.ZipCodeFull or address.ZipCode,
             )
             return result
 
@@ -66,10 +68,11 @@ class ZipCodeValidator(BaseValidator):
                 result.add_error(
                     field="ZipCode",
                     message=(
-                        f"ZIP code {address.ZipCode} is in {zip_info.state_id}, "
-                        f"not {normalized_state}"
+                        "ZIP code "
+                        f"{address.ZipCodeFull or address.ZipCode} "
+                        f"is in {zip_info.state_id}, not {normalized_state}"
                     ),
-                    value=address.ZipCode,
+                    value=address.ZipCodeFull or address.ZipCode,
                 )
 
         return result

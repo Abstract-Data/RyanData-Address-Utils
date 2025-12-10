@@ -259,7 +259,12 @@ class Address(BaseModel):
     StateName: Optional[str] = Field(
         default=None, description="The abbreviated or full name of the state"
     )
+    # Legacy ZIP field (backwards compatibility)
     ZipCode: Optional[str] = Field(default=None, description="The postal ZIP code")
+    # New ZIP fields
+    ZipCode5: Optional[str] = Field(default=None, description="5-digit ZIP")
+    ZipCode4: Optional[str] = Field(default=None, description="ZIP+4 extension")
+    ZipCodeFull: Optional[str] = Field(default=None, description="Full ZIP (5 or 5-4)")
     USPSBoxType: Optional[str] = Field(
         default=None, description="The type of post office box (e.g. 'PO Box')"
     )
@@ -374,30 +379,72 @@ class Address(BaseModel):
         if self.Address2:
             full_parts.append(self.Address2)
 
+        # ZIP normalization/validation
+        zip_input = self.ZipCodeFull or self.ZipCode
+
+        def validate_zip_parts(zip5: str, zip4: Optional[str]) -> tuple[str, Optional[str], str]:
+            if not zip5.isdigit() or len(zip5) != 5:
+                raise RyanDataAddressError(
+                    "address_validation",
+                    "ZipCode5 must be 5 digits",
+                    {"package": PACKAGE_NAME, "value": zip5},
+                )
+            if zip4 is not None:
+                if not zip4.isdigit() or len(zip4) != 4:
+                    raise RyanDataAddressError(
+                        "address_validation",
+                        "ZipCode4 must be 4 digits",
+                        {"package": PACKAGE_NAME, "value": zip4},
+                    )
+                full = f"{zip5}-{zip4}"
+            else:
+                full = zip5
+            return zip5, zip4, full
+
+        if zip_input:
+            cleaned = zip_input.strip()
+            zip5: Optional[str] = None
+            zip4: Optional[str] = None
+            if "-" in cleaned:
+                parts = cleaned.split("-", 1)
+                zip5 = parts[0]
+                zip4 = parts[1] if len(parts) > 1 else None
+            else:
+                if len(cleaned) == 9 and cleaned.isdigit():
+                    zip5, zip4 = cleaned[:5], cleaned[5:]
+                else:
+                    zip5 = cleaned
+                    zip4 = None
+            zip5, zip4, zip_full = validate_zip_parts(zip5, zip4)
+            self.ZipCode5 = zip5
+            self.ZipCode4 = zip4
+            self.ZipCodeFull = zip_full
+            # Keep legacy ZipCode populated for compatibility
+            self.ZipCode = zip_full
+        elif self.ZipCode5:
+            # If ZipCode5 provided directly
+            zip5, zip4, zip_full = validate_zip_parts(self.ZipCode5, self.ZipCode4)
+            self.ZipCode5 = zip5
+            self.ZipCode4 = zip4
+            self.ZipCodeFull = zip_full
+            self.ZipCode = zip_full
+
         # Add City, State Zip line
         city_state_zip_parts: list[str] = []
         if self.PlaceName:
             city_state_zip_parts.append(self.PlaceName)
 
-        if self.StateName and self.ZipCode:
-            city_state_zip_parts.append(f"{self.StateName} {self.ZipCode}")
+        if self.StateName and self.ZipCodeFull:
+            city_state_zip_parts.append(f"{self.StateName} {self.ZipCodeFull}")
         elif self.StateName:
             city_state_zip_parts.append(self.StateName)
-        elif self.ZipCode:
-            city_state_zip_parts.append(self.ZipCode)
+        elif self.ZipCodeFull:
+            city_state_zip_parts.append(self.ZipCodeFull)
 
         if city_state_zip_parts:
             full_parts.append(", ".join(city_state_zip_parts))
 
         self.FullAddress = ", ".join(full_parts)
-
-        # Basic validation: only check ZIP format if ZIP is provided
-        if self.ZipCode and (not self.ZipCode.isdigit() or len(self.ZipCode) != 5):
-            raise RyanDataAddressError(
-                "address_validation",
-                "ZipCode must be 5 digits",
-                {"package": PACKAGE_NAME, "value": self.ZipCode},
-            )
 
         return self
 

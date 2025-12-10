@@ -379,6 +379,43 @@ class TestZipCodeEdgeCases:
         assert result.address is not None
         assert result.address.ZipCode == "00000"
 
+    def test_zip_plus_four_splits_into_fields(self) -> None:
+        """ZIP+4 should populate ZipCode5, ZipCode4, ZipCodeFull."""
+        result = parse("123 Main St, Austin TX 78749-1234")
+        assert result.is_valid
+        assert result.address is not None
+        addr = result.address
+        assert addr.ZipCode5 == "78749"
+        assert addr.ZipCode4 == "1234"
+        assert addr.ZipCodeFull == "78749-1234"
+        assert addr.ZipCode == "78749-1234"
+
+    def test_zip_plus_four_without_dash(self) -> None:
+        """Nine-digit ZIP should be parsed into 5 + 4."""
+        result = parse("123 Main St, Austin TX 787491234")
+        assert result.is_valid
+        assert result.address is not None
+        addr = result.address
+        assert addr.ZipCode5 == "78749"
+        assert addr.ZipCode4 == "1234"
+        assert addr.ZipCodeFull == "78749-1234"
+
+    def test_invalid_zip_length_raises(self) -> None:
+        """Invalid ZIP lengths should raise validation error."""
+        result = parse("123 Main St, Austin TX 1234")
+        assert not result.is_parsed
+        from pydantic import ValidationError
+
+        assert isinstance(result.error, ValidationError)
+
+    def test_invalid_zip4_length_raises(self) -> None:
+        """Invalid ZIP4 should raise validation error."""
+        result = parse("123 Main St, Austin TX 78749-12")
+        assert not result.is_parsed
+        from pydantic import ValidationError
+
+        assert isinstance(result.error, ValidationError)
+
 
 # =============================================================================
 # State Edge Cases
