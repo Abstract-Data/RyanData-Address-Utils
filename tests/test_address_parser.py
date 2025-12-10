@@ -930,7 +930,7 @@ def _require_libpostal() -> None:
 
 def test_parse_auto_us_success_sets_source() -> None:
     service = AddressService()
-    result = service.parse_auto_route("123 Main St, Austin TX 78749", validate=True)
+    result = service.parse_auto("123 Main St, Austin TX 78749", validate=True)
     assert result.source == "us"
     assert result.is_valid
     assert result.address is not None
@@ -940,7 +940,7 @@ def test_parse_auto_us_success_sets_source() -> None:
 def test_parse_auto_fallback_international_success() -> None:
     _require_libpostal()
     service = AddressService()
-    result = service.parse_auto_route("10 Downing St, London", validate=True)
+    result = service.parse_auto("10 Downing St, London", validate=True)
     assert result.source == "international"
     assert result.is_valid
     assert result.international_address is not None
@@ -954,7 +954,7 @@ def test_parse_auto_fallback_international_success() -> None:
 def test_parse_auto_international_missing_components_fails_strict() -> None:
     _require_libpostal()
     service = AddressService()
-    result = service.parse_auto_route("London", validate=True)
+    result = service.parse_auto("London", validate=True)
     assert result.source == "international"
     assert not result.is_valid
     assert isinstance(result.error, RyanDataAddressError)
@@ -963,7 +963,7 @@ def test_parse_auto_international_missing_components_fails_strict() -> None:
 def test_parse_auto_international_skips_us_when_probably_international() -> None:
     _require_libpostal()
     service = AddressService()
-    result = service.parse_auto_route("Potsdamer Straße 3, 10785 Berlin, Germany", validate=True)
+    result = service.parse_auto("Potsdamer Straße 3, 10785 Berlin, Germany", validate=True)
     assert result.source == "international"
     assert result.is_valid
     assert result.international_address is not None
@@ -973,7 +973,7 @@ def test_parse_auto_international_skips_us_when_probably_international() -> None
 def test_parse_auto_fallback_on_us_validation_error() -> None:
     _require_libpostal()
     service = AddressService()
-    result = service.parse_auto_route(
+    result = service.parse_auto(
         "1-1-2 Oshiage, Sumida-ku, Tokyo 131-0045, Japan", validate=True
     )
     assert result.source == "international"
@@ -1081,7 +1081,7 @@ ADVANCED_COMPLEX_ADDRESSES = [
 def test_parse_auto_advanced_complex_addresses(addr: str) -> None:
     _require_libpostal()
     service = AddressService()
-    result = service.parse_auto_route(addr, validate=True)
+    result = service.parse_auto(addr, validate=True)
     assert result.source in {"us", "international"}
     assert result.error is None
     assert result.address is not None or result.international_address is not None

@@ -75,14 +75,13 @@ from ryandata_address_utils.protocols import (
     DataSourceProtocol,
     ValidatorProtocol,
 )
-from ryandata_address_utils.remote import (
-    LibpostalContainerConfig,
-    LibpostalRemoteClient,
-    ensure_libpostal_container,
-    get_remote_client,
-    parse_remote,
+from ryandata_address_utils.service import (
+    AddressService,
+    get_default_service,
+    parse,
+    parse_auto,
+    parse_us_only,
 )
-from ryandata_address_utils.service import AddressService, get_default_service, parse
 from ryandata_address_utils.validation import (
     BaseValidator,
     CompositeValidator,
@@ -90,7 +89,7 @@ from ryandata_address_utils.validation import (
     ZipCodeValidator,
 )
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 __package_name__ = "ryandata-address-utils"
 
 __all__ = [
@@ -100,6 +99,8 @@ __all__ = [
     "AddressService",
     "get_default_service",
     "parse",
+    "parse_us_only",
+    "parse_auto",
     # Models
     "Address",
     "AddressBuilder",
@@ -138,12 +139,6 @@ __all__ = [
     "parse_address_series",
     "parse_address_to_dict",
     "register_accessor",
-    # Remote/libpostal API
-    "LibpostalRemoteClient",
-    "LibpostalContainerConfig",
-    "get_remote_client",
-    "ensure_libpostal_container",
-    "parse_remote",
 ]
 
 

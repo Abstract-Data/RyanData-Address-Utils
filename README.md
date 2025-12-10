@@ -26,8 +26,6 @@ Parse and validate US addresses with Pydantic models, ZIP/state validation, pand
 uv add git+https://github.com/Abstract-Data/RyanData-Address-Utils.git
 # with pandas extras
 uv add "ryandata-address-utils[pandas] @ git+https://github.com/Abstract-Data/RyanData-Address-Utils.git"
-# with API + remote Docker helpers
-uv add "ryandata-address-utils[api,remote] @ git+https://github.com/Abstract-Data/RyanData-Address-Utils.git"
 ```
 
 ### pip
@@ -35,83 +33,22 @@ uv add "ryandata-address-utils[api,remote] @ git+https://github.com/Abstract-Dat
 ```bash
 pip install git+https://github.com/Abstract-Data/RyanData-Address-Utils.git
 pip install "ryandata-address-utils[pandas] @ git+https://github.com/Abstract-Data/RyanData-Address-Utils.git"
-# with API + remote Docker helpers
-pip install "ryandata-address-utils[api,remote] @ git+https://github.com/Abstract-Data/RyanData-Address-Utils.git"
 ```
 
 ### Setup cheat sheet (pick what you need)
 
 - Local parsing only: install base package (no extras) and call `parse(...)` or `AddressService`.
 - Pandas workflows: add the `[pandas]` extra so `parse_dataframe` works without optional import errors.
-- FastAPI service + libpostal: add `[api]` (bundles FastAPI/uvicorn/postal) and run `uvicorn ryandata_address_utils.api:app --host 0.0.0.0 --port 8000` or use `make docker-run-api`.
-- Remote Docker helper/client: add `[remote]`; if Docker is available, `parse_remote(...)` can auto-start the libpostal API container, or point it at an existing base URL via `RYANDATA_LIBPOSTAL_URL`.
-- One container can serve many projects: start it once (e.g., `docker run -p 8000:8000 ghcr.io/abstract-data/ryandata-addr-utils-libpostal:latest`) and set `RYANDATA_LIBPOSTAL_URL=http://localhost:8000` in each project.
-
-## Docker (libpostal-ready, “clone and go”)
-
-Build (with libpostal and this package installed from the chosen ref):
-
-```bash
-make docker-build            # builds ghcr.io/abstract-data/ryandata-addr-utils-libpostal:latest
-make docker-test             # quick parse inside container
-```
-
-Shell into the image:
-
-```bash
-make docker-shell
-```
-
-Run the optional API (FastAPI) on port 8000:
-
-```bash
-make docker-run-api
-# Then call:
-# curl "http://localhost:8000/parse?address=123%20Main%20St,%20Austin%20TX%2078749"
-# International (if libpostal available in image):
-# curl "http://localhost:8000/parse_international?address=10%20Downing%20St,%20London"
-```
+- Libpostal setup (local, no Docker): run `uv run ryandata-address-utils-setup` and follow the prompts. The default data directory is system-wide (e.g., `/usr/local/share/libpostal` or `C:\\libpostal`); override it if you prefer and set `LIBPOSTAL_DATA_DIR` accordingly.
+- The setup command detects your OS, attempts installation via Homebrew/apt/dnf/yum where available, and downloads the official libpostal data archives into the chosen directory.
 
 ### International parsing (libpostal)
 
-- `parse_auto_route` (service) and `/parse_auto` (API) try US first, then libpostal if US validation fails.
+- `parse_auto` (service) tries US first, then libpostal if US validation fails.
 - Strict rules: international results must include a road plus at least one location element (city/state/postal/country) or parsing fails.
 - Returned structure includes `InternationalAddress` fields (`HouseNumber`, `Road`, `City`, `State`, `PostalCode`, `Country`, `CountryCode`) and raw libpostal `Components`.
-- Requires libpostal installed; the provided Docker image already bundles it. Outside Docker, install libpostal first.
+- Requires libpostal installed; use the setup helper (`uv run ryandata-address-utils-setup`) to install locally and download data.
 - Heuristics: if the input clearly names a non-US country or contains non-ASCII, it skips US parsing and goes straight to libpostal; otherwise, US is attempted first and any US validation failure triggers libpostal fallback.
-
-Notes:
-
-- Image name: `ghcr.io/abstract-data/ryandata-addr-utils-libpostal` (configurable via `DOCKER_IMAGE`, `DOCKER_TAG`, `DOCKER_REF`).
-- The image bundles libpostal; use it when you need international parsing without host installs.
-
-## Remote libpostal API + Python client
-
-- The libpostal-enabled image now runs a FastAPI service (`/health`, `/parse`, `/parse_international`, `/parse_auto`) by default. Start it manually:  
-  `docker run -p 8000:8000 ghcr.io/abstract-data/ryandata-addr-utils-libpostal:latest`
-
-- Python client with auto-start (requires Docker + `ryandata-address-utils[remote]`):  
-
-  ```python
-  from ryandata_address_utils import parse_remote
-
-  result = parse_remote("10 Downing St, London")
-  print(result.is_valid, result.source, result.to_dict())
-  ```
-
-- Target an existing service (no Docker needed):  
-
-  ```python
-  from ryandata_address_utils import LibpostalRemoteClient
-
-  client = LibpostalRemoteClient(base_url="http://my-libpostal:8000", auto_start=False)
-  result = client.parse_auto("123 Main St, Austin TX")
-  ```
-
-- Env toggles:  
-  - `RYANDATA_LIBPOSTAL_URL` – override base URL (disables auto-start)  
-  - `RYANDATA_LIBPOSTAL_AUTOSTART` – `0`/`1` to disable/enable Docker auto-start (default on)  
-  - `RYANDATA_LIBPOSTAL_IMAGE`, `RYANDATA_LIBPOSTAL_CONTAINER`, `RYANDATA_LIBPOSTAL_PORT` – image name, container name, host port
 
 ## Quick start
 

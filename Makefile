@@ -14,12 +14,6 @@ help:
 	@echo "  make typecheck    Run mypy type checker"
 	@echo "  make format       Format code with ruff"
 	@echo ""
-	@echo "Docker:"
-	@echo "  make docker-build   Build libpostal-enabled image"
-	@echo "  make docker-shell   Shell into the image"
-	@echo "  make docker-test    Run a sample parse inside the image"
-	@echo "  make docker-run-api Run the optional API server"
-	@echo ""
 	@echo "Cleanup:"
 	@echo "  make clean        Remove build artifacts"
 
@@ -46,25 +40,6 @@ typecheck:
 # Format code
 format:
 	uv run ruff format src/
-
-# Docker targets (libpostal-enabled image)
-DOCKER_IMAGE ?= ghcr.io/abstract-data/ryandata-addr-utils-libpostal
-DOCKER_TAG ?= latest
-DOCKER_REF ?= main
-
-docker-build:
-	docker build --build-arg RYANDATA_ADDR_UTILS_REF=$(DOCKER_REF) -t $(DOCKER_IMAGE):$(DOCKER_TAG) .
-
-docker-shell:
-	docker run --rm -it $(DOCKER_IMAGE):$(DOCKER_TAG) bash
-
-docker-test:
-	docker run --rm $(DOCKER_IMAGE):$(DOCKER_TAG) \
-		python -c "from ryandata_address_utils import parse; print(parse('123 Main St, Austin TX 78749').to_dict())"
-
-docker-run-api:
-	docker run --rm -p 8000:8000 $(DOCKER_IMAGE):$(DOCKER_TAG) \
-		uvicorn ryandata_address_utils.api:app --host 0.0.0.0 --port 8000
 
 # Clean up
 clean:

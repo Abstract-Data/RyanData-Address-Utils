@@ -292,6 +292,10 @@ class Address(BaseModel):
         default=None,
         description="True if derived from an international/libpostal parse; otherwise None",
     )
+    ParserSource: Optional[str] = Field(
+        default=None,
+        description="Parser backend used to produce this address (e.g., 'usaddress', 'libpostal')",
+    )
     Address1: Optional[str] = Field(
         default=None,
         description="Formatted street address line (auto-computed from components)",

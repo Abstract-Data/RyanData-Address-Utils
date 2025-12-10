@@ -1,0 +1,17 @@
+{
+  "branches": ["main"],
+  "repository_url": "https://github.com/Abstract-Data/RyanData-Address-Utils",
+  "changelog": {
+    "exclude": {
+      "labels": ["skip-changelog"]
+    }
+  },
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    "@semantic-release/changelog",
+    "@semantic-release/github",
+    "@semantic-release/git"
+  ]
+}
+

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import warnings
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Optional
 
@@ -19,11 +21,37 @@ from ryandata_address_utils.validation.validators import create_default_validato
 
 # Optional libpostal import for international parsing
 try:
-    from postal.parser import parse_address as lp_parse_address
     from postal.expand import expand_address as lp_expand_address
+    from postal.parser import parse_address as lp_parse_address
 except ImportError:
     lp_parse_address = None
     lp_expand_address = None
+
+_LIBPOSTAL_WARN_ENV = "RYANDATA_LIBPOSTAL_WARN"
+_libpostal_warned = False
+
+
+def _maybe_warn_libpostal_missing() -> None:
+    """Emit a one-time warning when libpostal is unavailable."""
+
+    global _libpostal_warned
+    if _libpostal_warned or lp_parse_address is not None:
+        return
+
+    flag = os.getenv(_LIBPOSTAL_WARN_ENV, "1").lower()
+    if flag in {"0", "false", "no"}:
+        _libpostal_warned = True
+        return
+
+    warnings.warn(
+        (
+            "libpostal not available. Run 'ryandata-address-utils-setup' to install "
+            "libpostal and its data (set RYANDATA_LIBPOSTAL_WARN=0 to suppress)."
+        ),
+        RuntimeWarning,
+        stacklevel=2,
+    )
+    _libpostal_warned = True
 
 
 def _is_probably_international(address_string: str) -> bool:
@@ -59,6 +87,8 @@ def _is_probably_international(address_string: str) -> bool:
         "finland",
         "united arab emirates",
         "uae",
+        "pakistan",
+        "pak",
         # Major non-us cities (helps steer ambiguous inputs)
         "london",
         "tokyo",
@@ -83,7 +113,13 @@ def _is_probably_international(address_string: str) -> bool:
 def _international_to_address(intl: InternationalAddress) -> Address:
     """Convert an InternationalAddress into an Address schema for consumers expecting Address."""
 
-    data: dict[str, Optional[str]] = {
+    normalized_full = (
+        intl.NormalizedAddresses[0]
+        if intl.NormalizedAddresses
+        else (intl.FullAddress or intl.RawInput)
+    )
+
+    data: dict[str, object | None] = {
         "AddressNumber": intl.HouseNumber,
         "StreetName": intl.Road,
         "PlaceName": intl.City,
@@ -91,10 +127,13 @@ def _international_to_address(intl: InternationalAddress) -> Address:
         "RawInput": intl.RawInput,
         "IsInternational": True,
     }
-    return Address.model_validate(data)
+    addr = Address.model_validate(data)
+    if normalized_full:
+        addr.FullAddress = normalized_full
+    return addr
 
 
-def _looks_like_us(address_string: str, data_source) -> bool:
+def _looks_like_us(address_string: str, data_source: DataSourceProtocol) -> bool:
     """Lightweight check to keep US-looking inputs on the US path."""
 
     lower = address_string.lower()
@@ -157,6 +196,7 @@ class AddressService:
             validator: Validator implementation. Defaults to composite validator.
             check_state_match: If True, verify ZIP matches state during validation.
         """
+        _maybe_warn_libpostal_missing()
         self._parser = parser or ParserFactory.create()
         self._data_source = data_source or DataSourceFactory.create()
 
@@ -238,6 +278,16 @@ class AddressService:
                     result.address.validate_external_results(result.validation)
 
         return results
+
+    def parse_us_only(
+        self,
+        address_string: str,
+        *,
+        validate: bool = True,
+    ) -> ParseResult:
+        """Explicit US-only parse (alias of parse)."""
+
+        return self.parse(address_string, validate=validate)
 
     def parse_to_dict(
         self,
@@ -347,7 +397,10 @@ class AddressService:
         if lp_parse_address is None:
             return ParseResult(
                 raw_input=address_string,
-                error=RuntimeError("libpostal not available"),
+                error=RuntimeError(
+                    "libpostal not available. Run 'ryandata-address-utils-setup' "
+                    "to install libpostal and its data."
+                ),
                 address=None,
                 international_address=None,
                 validation=ValidationResult(is_valid=False, errors=[]),
@@ -395,7 +448,7 @@ class AddressService:
             is_international=True,
             )
 
-    def parse_auto_route(self, address_string: str, *, validate: bool = True) -> ParseResult:
+    def parse_auto(self, address_string: str, *, validate: bool = True) -> ParseResult:
         """Try US parse first; if invalid or fails and libpostal is available, fall back."""
         # If clearly international, skip US path
         if _is_probably_international(address_string) and lp_parse_address is not None:
@@ -404,14 +457,22 @@ class AddressService:
         try:
             us_result = self.parse(address_string, validate=validate)
         except Exception as exc:
-            if lp_parse_address is not None:
-                intl_result = self.parse_international(address_string)
-                if intl_result.is_valid or intl_result.international_address is not None:
-                    intl_result.is_international = not _looks_like_us(address_string, self._data_source)
-                    if intl_result.address:
-                        intl_result.address.IsInternational = intl_result.is_international
-                    return intl_result
-            # Return error as a ParseResult to avoid raising in auto route
+            if _looks_like_us(address_string, self._data_source) or lp_parse_address is None:
+                return ParseResult(
+                    raw_input=address_string,
+                    address=None,
+                    international_address=None,
+                    error=exc,
+                    validation=ValidationResult(is_valid=False, errors=[]),
+                    source="us",
+                    is_international=False,
+                )
+            intl_result = self.parse_international(address_string)
+            if intl_result.is_valid or intl_result.international_address is not None:
+                intl_result.is_international = True
+                if intl_result.address:
+                    intl_result.address.IsInternational = True
+                return intl_result
             return ParseResult(
                 raw_input=address_string,
                 address=None,
@@ -428,11 +489,28 @@ class AddressService:
         if lp_parse_address is None:
             return us_result
 
+        # If the input still looks like US, return the US result even if not valid
+        if _looks_like_us(address_string, self._data_source):
+            us_result.is_international = False
+            if us_result.address:
+                us_result.address.IsInternational = False
+            return us_result
+
         intl_result = self.parse_international(address_string)
-        intl_result.is_international = not _looks_like_us(address_string, self._data_source)
+        intl_result.is_international = True
         if intl_result.address:
-            intl_result.address.IsInternational = intl_result.is_international
+            intl_result.address.IsInternational = True
         return intl_result
+
+    def parse_auto_route(self, address_string: str, *, validate: bool = True) -> ParseResult:
+        """Deprecated alias for parse_auto."""
+
+        warnings.warn(
+            "parse_auto_route is deprecated; use parse_auto instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.parse_auto(address_string, validate=validate)
 
     # -------------------------------------------------------------------------
     # Pandas integration methods
@@ -553,3 +631,26 @@ def parse(address_string: str, *, validate: bool = True) -> ParseResult:
         ParseResult containing the parsed address.
     """
     return get_default_service().parse(address_string, validate=validate)
+
+
+def parse_us_only(address_string: str, *, validate: bool = True) -> ParseResult:
+    """Explicit US-only parse using the default service."""
+
+    return get_default_service().parse_us_only(address_string, validate=validate)
+
+
+def parse_auto(address_string: str, *, validate: bool = True) -> ParseResult:
+    """Auto route: try US, then libpostal."""
+
+    return get_default_service().parse_auto(address_string, validate=validate)
+
+
+def parse_auto_route(address_string: str, *, validate: bool = True) -> ParseResult:
+    """Deprecated alias for parse_auto."""
+
+    warnings.warn(
+        "parse_auto_route is deprecated; use parse_auto instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return parse_auto(address_string, validate=validate)
