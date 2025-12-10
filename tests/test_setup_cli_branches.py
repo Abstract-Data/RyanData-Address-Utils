@@ -46,4 +46,3 @@ def test_check_libpostal_success(monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ok, reason = setup_cli.check_libpostal(tmp_path)
     assert ok
     assert reason is None
-
