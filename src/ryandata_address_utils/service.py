@@ -272,7 +272,7 @@ class AddressService:
                 )
             else:
                 return pd.Series({field: None for field in ADDRESS_FIELDS})
-        except Exception as e:
+        except Exception:
             if errors == "raise":
                 raise
             else:
