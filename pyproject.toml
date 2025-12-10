@@ -47,6 +47,7 @@ dev = [
     "mypy>=1.13.0",
     "pytest>=8.0.0",
     "hypothesis>=6.0.0",
+    "python-semantic-release>=9.0.0",
 ]
 
 [build-system]
@@ -66,6 +67,26 @@ include = [
 [tool.ruff]
 target-version = "py39"
 line-length = 100
+
+[tool.semantic_release]
+version_variables = [
+    "pyproject.toml:version",
+    "src/ryandata_address_utils/__init__.py:__version__",
+]
+version_toml = "pyproject.toml:project.version"
+commit_parser = "semantic_release.commit_parser.emoji"
+minor_tag = ":sparkles:"
+patch_tag = ":bug:"
+changelog_sections = [
+    {type = "feat", section = "Features"},
+    {type = "fix", section = "Bug Fixes"},
+    {type = "docs", section = "Documentation"},
+    {type = "style", section = "Style"},
+    {type = "refactor", section = "Code Refactoring"},
+    {type = "perf", section = "Performance Improvements"},
+    {type = "test", section = "Tests"},
+    {type = "chore", section = "Chores"},
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
