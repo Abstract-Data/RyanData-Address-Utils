@@ -6,7 +6,7 @@
 - **Raw Input Preservation**: Added RawInput field to Address model to capture original input strings
 - **Automated Releases**: Reinstated GitHub Actions release workflow with semantic-release for automated versioning and releases
 
-## Fixes  
+## Fixes
 - **Pandas Integration**: Fixed validation error handling in pandas integration methods when `errors='coerce'` is used
 - **Workflow Issues**: Resolved GitHub Actions workflow failures and cache problems
 - **Import Compatibility**: Cleaned up imports for Python 3.9+ compatibility

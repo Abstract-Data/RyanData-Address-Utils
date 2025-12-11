@@ -40,8 +40,6 @@ Quick Start:
 
 from __future__ import annotations
 
-from typing import Optional
-
 from ryandata_address_utils.data import (
     BaseDataSource,
     CSVDataSource,
@@ -142,7 +140,7 @@ __all__ = [
 ]
 
 
-def get_city_state_from_zip(zip_code: str) -> Optional[tuple[str, str]]:
+def get_city_state_from_zip(zip_code: str) -> tuple[str, str] | None:
     """Look up city and state from a ZIP code.
 
     Args:

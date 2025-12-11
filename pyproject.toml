@@ -28,6 +28,7 @@ dependencies = [
     "typing-extensions>=4.0.0",
     "typer>=0.12.5",
     "trogon>=0.6.0",
+    "eval-type-backport>=0.3.1",
 ]
 
 [project.optional-dependencies]
@@ -54,6 +55,7 @@ dev = [
     "hypothesis>=6.0.0",
     "python-semantic-release>=9.0.0",
     "codecov>=2.1.13",
+    "pre-commit>=4.0.0",
 ]
 
 [build-system]
@@ -84,7 +86,6 @@ version_variables = [
 select = ["E", "F", "I", "UP", "B", "SIM"]
 ignore = [
     "UP007",  # Use X | Y - not compatible with Pydantic on Python 3.9
-    "UP045",  # Use X | None - not compatible with Pydantic on Python 3.9
 ]
 
 [tool.mypy]
@@ -96,3 +97,9 @@ warn_return_any = true
 warn_unused_ignores = true
 disallow_untyped_defs = true
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+check_untyped_defs = true
+warn_return_any = false

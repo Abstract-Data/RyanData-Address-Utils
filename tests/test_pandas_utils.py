@@ -3,10 +3,11 @@ import pytest
 # Skip all tests if pandas is not installed
 pytest.importorskip("pandas")
 
-import pandas as pd
+import pandas as pd  # noqa: E402
 
-from ryandata_address_utils import (
+from ryandata_address_utils import (  # noqa: E402
     AddressService,
+    RyanDataAddressError,
     parse_address_series,
     parse_address_to_dict,
     parse_addresses,
@@ -66,6 +67,17 @@ class TestParseAddresses:
         assert "parsed_AddressNumber" in result.columns
         assert "parsed_ZipCode" in result.columns
 
+    def test_full_zipcode_us_in_dataframe(self) -> None:
+        """US ZIP+4 should populate FullZipcode in dataframe output."""
+        df = pd.DataFrame({"address": ["123 Main St, Austin TX 78749-1234"]})
+        result = parse_addresses(df, "address", inplace=False)
+
+        assert "FullZipcode" in result.columns
+        assert result.loc[0, "FullZipcode"] == "78749-1234"
+        assert result.loc[0, "ZipCodeFull"] == "78749-1234"
+        assert result.loc[0, "ZipCode5"] == "78749"
+        assert result.loc[0, "ZipCode4"] == "1234"
+
     def test_inplace(self) -> None:
         """inplace=True should modify original DataFrame."""
         df = pd.DataFrame({"address": ["123 Main St, Austin TX 78749"]})
@@ -120,6 +132,55 @@ class TestParseAddresses:
         assert result["ZipCode"].iloc[0] == "78749"
         assert result["ZipCode"].iloc[1] is None  # Coerced to None
 
+    def test_errors_ignore_returns_original(self) -> None:
+        """errors='ignore' should return original address string on failure."""
+        df = pd.DataFrame({"address": ["invalid address"]})
+        result = parse_addresses(df, "address", validate=True, errors="ignore")
+        # Should include original column untouched plus parsed columns
+        assert "address" in result.columns
+        assert result.loc[0, "address"] == "invalid address"
+        assert result["AddressNumber"].iloc[0] is None
+
+    def test_parse_address_series_ignore_and_accessor(self) -> None:
+        """Series parsing via function and accessor with errors='ignore'."""
+        series = pd.Series(["invalid address", None, ""])
+        df = parse_address_series(series, validate=True, errors="ignore")
+        assert df["AddressNumber"].tolist() == [None, None, None]
+
+        # Accessor path
+        from ryandata_address_utils.pandas_ext import register_accessor
+
+        register_accessor()
+        parsed = series.addr.parse(validate=True, errors="ignore")
+        assert parsed["AddressNumber"].tolist() == [None, None, None]
+
+    def test_parse_dataframe_errors_raise_from_to_series(self, monkeypatch) -> None:
+        """parse_dataframe should propagate errors when errors='raise'."""
+        service = AddressService()
+
+        def fake_to_series(*_args, **_kwargs):
+            raise RyanDataAddressError(
+                "validation_error",
+                "boom",
+                {"package": "ryandata_address_utils"},
+            )
+
+        monkeypatch.setattr(service, "to_series", fake_to_series)
+        df = pd.DataFrame({"address": ["123 Main St, Austin TX"]})
+        with pytest.raises(RyanDataAddressError):
+            service.parse_dataframe(df, "address", errors="raise")
+
+    def test_series_accessor_prefix_and_none(self) -> None:
+        """Accessor parse should handle None/empty and support prefix."""
+        from ryandata_address_utils.pandas_ext import register_accessor
+
+        register_accessor()
+        series = pd.Series(["123 Main St, Austin TX 78749", None, ""])
+        parsed = series.addr.parse(validate=False, errors="coerce")
+        assert parsed["AddressNumber"].tolist()[0] == "123"
+        assert parsed["AddressNumber"].tolist()[1] is None
+        assert parsed["AddressNumber"].tolist()[2] is None
+
 
 class TestParseAddressSeries:
     """Test parse_address_series function."""
@@ -169,6 +230,28 @@ class TestAddressServicePandas:
 
         assert "AddressNumber" in result.columns
         assert result["AddressNumber"].iloc[0] == "123"
+
+    def test_full_zipcode_international_in_dataframe(self) -> None:
+        """International postal code should surface via FullZipcode with US ZIP fields empty."""
+        pytest.importorskip("postal.parser")
+        service = AddressService()
+        df = pd.DataFrame({"address": ["10 Downing St, London SW1A 2AA, UK"]})
+
+        result = service.parse_dataframe(df, "address")
+        assert "FullZipcode" in result.columns
+        postal = result.loc[0, "FullZipcode"]
+        if pd.isna(postal):
+            pytest.skip("libpostal did not return a postal code for this address")
+        assert result.loc[0, "ZipCode"] is None
+        assert result.loc[0, "ZipCode5"] is None
+        assert result.loc[0, "ZipCode4"] is None
+        assert result.loc[0, "ZipCodeFull"] is None
+
+    def test_parse_addresses_errors_raise(self) -> None:
+        """errors='raise' should raise on invalid address in parse_addresses."""
+        df = pd.DataFrame({"address": ["123 Main St, Austin XX 00000"]})
+        with pytest.raises(RyanDataAddressError):
+            parse_addresses(df, "address", errors="raise")
 
 
 class TestEdgeCases:

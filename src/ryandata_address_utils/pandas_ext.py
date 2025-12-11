@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from ryandata_address_utils.models import ADDRESS_FIELDS
 
@@ -30,7 +30,7 @@ class AddressParserAccessor:
             pandas_obj: The pandas Series this accessor is attached to.
         """
         self._obj = pandas_obj
-        self._service: Optional[AddressService] = None
+        self._service: AddressService | None = None
 
     def _get_service(self) -> AddressService:
         """Get or create the AddressService instance."""
@@ -45,7 +45,7 @@ class AddressParserAccessor:
         *,
         validate: bool = True,
         errors: str = "coerce",
-        service: Optional[AddressService] = None,
+        service: AddressService | None = None,
     ) -> pd.DataFrame:
         """Parse addresses in the Series.
 
@@ -101,7 +101,7 @@ def parse_address_to_dict(
     address: str,
     validate: bool = True,
     errors: str = "raise",
-) -> dict[str, Optional[str]]:
+) -> dict[str, str | None]:
     """Parse an address string and return a dictionary of components.
 
     Note: Prefer using AddressService.parse_to_dict() instead.

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Optional, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
     from ryandata_address_utils.models import Address, ParseResult, ValidationResult, ZipInfo
@@ -46,7 +46,7 @@ class DataSourceProtocol(Protocol):
     supporting different backends (CSV, database, API, etc.).
     """
 
-    def get_zip_info(self, zip_code: str) -> Optional[ZipInfo]:
+    def get_zip_info(self, zip_code: str) -> ZipInfo | None:
         """Get information about a ZIP code.
 
         Args:
@@ -79,7 +79,7 @@ class DataSourceProtocol(Protocol):
         """
         ...
 
-    def normalize_state(self, state: str) -> Optional[str]:
+    def normalize_state(self, state: str) -> str | None:
         """Normalize a state name to its abbreviation.
 
         Args:

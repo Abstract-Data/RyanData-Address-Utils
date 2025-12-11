@@ -68,9 +68,14 @@ class BaseAddressParser(ABC):
                 address_string[:50],
                 str(e),
             )
+            # Ensure it is a RyanDataAddressError
+            from ryandata_address_utils.models import RyanDataAddressError
+
+            final_error = RyanDataAddressError.from_validation_error(e)
+
             return ParseResult(
                 raw_input=address_string,
-                error=e,
+                error=final_error,
             )
 
     def parse_batch(self, addresses: Sequence[str]) -> list[ParseResult]:

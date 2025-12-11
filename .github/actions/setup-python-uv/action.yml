@@ -32,4 +32,3 @@ runs:
         else
           uv sync --group dev
         fi
-

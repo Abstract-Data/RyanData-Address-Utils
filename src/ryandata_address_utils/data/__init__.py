@@ -6,8 +6,6 @@ for geographic validation data.
 
 from __future__ import annotations
 
-from typing import Optional
-
 from ryandata_address_utils.data.base import BaseDataSource
 from ryandata_address_utils.data.csv_source import CSVDataSource, get_default_csv_source
 from ryandata_address_utils.data.factory import DataSourceFactory
@@ -29,7 +27,7 @@ __all__ = [
 
 
 # Backwards compatibility functions using default CSV source
-def get_zip_info(zip_code: str) -> Optional[ZipInfo]:
+def get_zip_info(zip_code: str) -> ZipInfo | None:
     """Get information about a ZIP code.
 
     Args:
@@ -65,7 +63,7 @@ def is_valid_state(state: str) -> bool:
     return get_default_csv_source().is_valid_state(state)
 
 
-def normalize_state(state: str) -> Optional[str]:
+def normalize_state(state: str) -> str | None:
     """Normalize a state name to its abbreviation.
 
     Args:

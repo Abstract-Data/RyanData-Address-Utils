@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import hashlib
 import os
 import warnings
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from ryandata_address_utils.data import DataSourceFactory
 from ryandata_address_utils.models import (
@@ -119,17 +120,25 @@ def _international_to_address(intl: InternationalAddress) -> Address:
         else (intl.FullAddress or intl.RawInput)
     )
 
-    data: dict[str, object | None] = {
-        "AddressNumber": intl.HouseNumber,
-        "StreetName": intl.Road,
-        "PlaceName": intl.City,
-        "StateName": intl.State,
-        "RawInput": intl.RawInput,
-        "IsInternational": True,
-    }
+    # Use components dict for direct alias mapping (Address model supports libpostal keys)
+    # Join list values into strings
+    data: dict[str, object] = {k: " ".join(v) for k, v in intl.Components.items()}
+
+    # Add explicit overrides/extras
+    data.update(
+        {
+            "RawInput": intl.RawInput,
+            "IsInternational": True,
+            "Country": intl.Country,
+        }
+    )
+
     addr = Address.model_validate(data)
+
+    # Overwrite FullAddress with normalized version if available (validator overwrites it initially)
     if normalized_full:
         addr.FullAddress = normalized_full
+
     return addr
 
 
@@ -183,9 +192,9 @@ class AddressService:
 
     def __init__(
         self,
-        parser: Optional[AddressParserProtocol] = None,
-        data_source: Optional[DataSourceProtocol] = None,
-        validator: Optional[ValidatorProtocol] = None,
+        parser: AddressParserProtocol | None = None,
+        data_source: DataSourceProtocol | None = None,
+        validator: ValidatorProtocol | None = None,
         check_state_match: bool = False,
     ) -> None:
         """Initialize the address service.
@@ -228,6 +237,7 @@ class AddressService:
         address_string: str,
         *,
         validate: bool = True,
+        expand: bool = True,
     ) -> ParseResult:
         """Parse a single address string.
 
@@ -247,6 +257,16 @@ class AddressService:
             result.validation = self._validator.validate(result.address)
             # Check for ZIP/state validation errors and raise PydanticCustomError
             result.address.validate_external_results(result.validation)
+
+        # Apply expansion and hashing if requested (and available)
+        if expand and result.is_parsed and result.address is not None:
+            expanded_str, addr_hash = self._expand_and_hash(address_string)
+            if addr_hash:
+                result.address.AddressHash = addr_hash
+            if expanded_str:
+                # User prefers expanded format (e.g. "Street" vs "St")
+                # We update FullAddress with the libpostal expansion if available
+                result.address.FullAddress = expanded_str
 
         return result
 
@@ -295,7 +315,7 @@ class AddressService:
         *,
         validate: bool = True,
         errors: str = "raise",
-    ) -> dict[str, Optional[str]]:
+    ) -> dict[str, str | None]:
         """Parse an address and return a dictionary.
 
         Args:
@@ -316,6 +336,11 @@ class AddressService:
         if not result.is_valid:
             if errors == "raise":
                 if result.error:
+                    from ryandata_address_utils.models import RyanDataAddressError
+
+                    # Ensure it is a RyanDataAddressError, even if it was just passed through
+                    if not isinstance(result.error, RyanDataAddressError):
+                        raise RyanDataAddressError.from_validation_error(result.error)
                     raise result.error
                 if result.validation and not result.validation.is_valid:
                     # Re-raise the first validation error if it's a PydanticCustomError
@@ -330,7 +355,7 @@ class AddressService:
 
         return result.to_dict()
 
-    def lookup_zip(self, zip_code: str) -> Optional[ZipInfo]:
+    def lookup_zip(self, zip_code: str) -> ZipInfo | None:
         """Look up information about a ZIP code.
 
         Args:
@@ -341,7 +366,7 @@ class AddressService:
         """
         return self._data_source.get_zip_info(zip_code)
 
-    def get_city_state_from_zip(self, zip_code: str) -> Optional[tuple[str, str]]:
+    def get_city_state_from_zip(self, zip_code: str) -> tuple[str, str] | None:
         """Look up city and state from a ZIP code.
 
         Args:
@@ -377,7 +402,7 @@ class AddressService:
         """
         return self._data_source.is_valid_state(state)
 
-    def normalize_state(self, state: str) -> Optional[str]:
+    def normalize_state(self, state: str) -> str | None:
         """Normalize a state name to its abbreviation.
 
         Args:
@@ -392,7 +417,33 @@ class AddressService:
     # International / libpostal parsing
     # -------------------------------------------------------------------------
 
-    def parse_international(self, address_string: str) -> ParseResult:
+    def _expand_and_hash(self, address_string: str) -> tuple[str | None, str | None]:
+        """Expand address using libpostal and return expanded string + hash.
+
+        Returns:
+            Tuple of (expanded_address_string, sha256_hash).
+            Values are None if libpostal is not available or fails.
+        """
+        if lp_expand_address is None:
+            return None, None
+
+        try:
+            # expand_address returns a list of normalized variants
+            expansions = lp_expand_address(address_string)
+            if not expansions:
+                return None, None
+
+            # Use the first variant as canonical
+            expanded_str = expansions[0]
+
+            # Compute SHA-256 hash of the expanded string
+            addr_hash = hashlib.sha256(expanded_str.encode("utf-8")).hexdigest()
+
+            return expanded_str, addr_hash
+        except Exception:
+            return None, None
+
+    def parse_international(self, address_string: str, expand: bool = True) -> ParseResult:
         """Parse an address using libpostal if available."""
         if lp_parse_address is None:
             return ParseResult(
@@ -416,7 +467,12 @@ class AddressService:
                 components.setdefault(label, []).append(value)
 
             normalized_addresses: list[str] = []
-            if lp_expand_address is not None:
+            # Reuse helper or just call expand directly to keep the list?
+            # parse_international needs the list for InternationalAddress.NormalizedAddresses
+            # But helper only returns the first one.
+            # Let's call expand manually here to preserve the list convention
+            # for InternationalAddress, but calculate hash too.
+            if expand and lp_expand_address is not None:
                 try:
                     normalized_addresses = lp_expand_address(address_string)
                 except Exception:
@@ -428,6 +484,14 @@ class AddressService:
                 normalized_addresses=normalized_addresses,
             )
             addr_from_intl = _international_to_address(intl_address)
+
+            if expand and normalized_addresses:
+                # Compute hash using the first expansion (same as _expand_and_hash)
+                expanded_str = normalized_addresses[0]
+                addr_hash = hashlib.sha256(expanded_str.encode("utf-8")).hexdigest()
+                addr_from_intl.AddressHash = addr_hash
+                # _international_to_address likely set FullAddress to normalized_full already
+
             return ParseResult(
                 raw_input=address_string,
                 address=addr_from_intl,
@@ -448,14 +512,16 @@ class AddressService:
                 is_international=True,
             )
 
-    def parse_auto(self, address_string: str, *, validate: bool = True) -> ParseResult:
+    def parse_auto(
+        self, address_string: str, *, validate: bool = True, expand: bool = True
+    ) -> ParseResult:
         """Try US parse first; if invalid or fails and libpostal is available, fall back."""
         # If clearly international, skip US path
         if _is_probably_international(address_string) and lp_parse_address is not None:
-            return self.parse_international(address_string)
+            return self.parse_international(address_string, expand=expand)
 
         try:
-            us_result = self.parse(address_string, validate=validate)
+            us_result = self.parse(address_string, validate=validate, expand=expand)
         except Exception as exc:
             if _looks_like_us(address_string, self._data_source) or lp_parse_address is None:
                 return ParseResult(
@@ -467,7 +533,7 @@ class AddressService:
                     source="us",
                     is_international=False,
                 )
-            intl_result = self.parse_international(address_string)
+            intl_result = self.parse_international(address_string, expand=expand)
             if intl_result.is_valid or intl_result.international_address is not None:
                 intl_result.is_international = True
                 if intl_result.address:
@@ -496,7 +562,7 @@ class AddressService:
                 us_result.address.IsInternational = False
             return us_result
 
-        intl_result = self.parse_international(address_string)
+        intl_result = self.parse_international(address_string, expand=expand)
         intl_result.is_international = True
         if intl_result.address:
             intl_result.address.IsInternational = True
@@ -603,7 +669,7 @@ class AddressService:
 
 
 # Module-level convenience function
-_default_service: Optional[AddressService] = None
+_default_service: AddressService | None = None
 
 
 def get_default_service() -> AddressService:
