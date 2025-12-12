@@ -909,7 +909,7 @@ wheels = [
 
 [[package]]
 name = "ryandata-address-utils"
-version = "0.7.0"
+version = "0.7.1"
 source = { editable = "." }
 dependencies = [
     { name = "abstract-validation-base" },

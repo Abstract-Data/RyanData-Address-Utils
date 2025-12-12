@@ -1,0 +1,111 @@
+# ryandata-address-utils
+
+> US address parsing library with Pydantic models, validation, and pandas integration
+
+## Quick Facts
+
+- Package: ryandata-address-utils
+- Version: 0.7.1
+- Python: >=3.12.8, <=3.13
+- License: MIT
+- Repository: https://github.com/Abstract-Data/RyanData-Address-Utils
+
+## What This Library Does
+
+Parse, validate, and normalize US addresses into structured components. Features include:
+- 26+ address components (street number, name, city, state, ZIP, unit, etc.)
+- ZIP code and state validation against authoritative datasets
+- Pandas DataFrame integration for batch processing
+- International address support via libpostal (optional)
+- Transformation tracking with ProcessLog audit trails
+
+## Main Entry Points
+
+```python
+from ryandata_address_utils import AddressService, parse
+
+# Simple parsing
+result = parse("123 Main St, Austin TX 78749")
+if result.is_valid:
+    print(result.address.ZipCode)  # "78749"
+
+# Service-based parsing
+service = AddressService()
+result = service.parse("456 Oak Ave, Dallas TX 75201")
+
+# Pandas integration
+df = service.parse_dataframe(df, "address_column")
+```
+
+## Key Classes
+
+- AddressService: Main facade for parsing operations
+- Address: Pydantic model with all address components
+- ParseResult: Container for parsed address + validation + logs
+- AddressBuilder: Fluent API for programmatic address construction
+- ProcessLog: Audit trail for transformations
+
+## Installation
+
+```bash
+# Using uv (recommended)
+uv add git+https://github.com/Abstract-Data/RyanData-Address-Utils.git
+
+# With pandas support
+uv add "ryandata-address-utils[pandas] @ git+https://github.com/Abstract-Data/RyanData-Address-Utils.git"
+```
+
+## Documentation Files
+
+- README.md: Installation, quick start, usage examples
+- docs/ARCHITECTURE.md: Design patterns, data flow, SOLID principles
+- AGENTS.md: AI coding assistant guidance
+- CHANGELOG.md: Version history and changes
+- .cursor/agents.md: Cursor-specific agent workflows
+
+## Architecture
+
+The library uses:
+- Facade pattern (AddressService)
+- Protocol-based interfaces for extensibility
+- Factory pattern for parsers and data sources
+- Composite pattern for validators
+- Builder pattern for address construction
+
+## Common Operations
+
+### Parse a single address
+```python
+result = parse("123 Main St, Austin TX 78749")
+```
+
+### Parse with automatic US/international detection
+```python
+result = service.parse_auto("10 Downing Street, London, UK")
+```
+
+### Validate ZIP codes
+```python
+from ryandata_address_utils import is_valid_zip, get_zip_info
+is_valid_zip("78749")  # True
+info = get_zip_info("78749")  # ZipInfo with city, state, county
+```
+
+### Build addresses programmatically
+```python
+from ryandata_address_utils import AddressBuilder
+address = (
+    AddressBuilder()
+    .with_street_number("123")
+    .with_street_name("Main")
+    .with_city("Austin")
+    .with_state("TX")
+    .with_zip("78749")
+    .build()
+)
+```
+
+## Contact
+
+- Issues: https://github.com/Abstract-Data/RyanData-Address-Utils/issues
+- Author: Abstract-Data (dev@abstractdata.io)

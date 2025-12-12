@@ -4,7 +4,7 @@
 [![Ruff](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/lint.yml/badge.svg)](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/lint.yml)
 [![MyPy](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/typecheck.yml/badge.svg)](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/typecheck.yml)
 [![codecov](https://codecov.io/gh/Abstract-Data/RyanData-Address-Utils/graph/badge.svg?token=75LQK4KJTZ)](https://codecov.io/gh/Abstract-Data/RyanData-Address-Utils)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![uv](https://img.shields.io/badge/packaging-uv-9055ff.svg)](https://github.com/astral-sh/uv)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -12,11 +12,12 @@ Parse and validate US addresses with Pydantic models, ZIP/state validation, pand
 
 ## Highlights
 
-- Structured parsing of US addresses into 26 components with Pydantic models
+- Structured parsing of US addresses into 26+ components with Pydantic models
 - ZIP and state validation backed by authoritative datasets
 - Pandas-friendly parsing for batch workloads
 - Custom errors (`RyanDataAddressError`, `RyanDataValidationError`) with package context
 - Builder API for programmatic address construction
+- ProcessLog system for transformation auditing (via `abstract-validation-base`)
 - Semantic-release CI for automated tagging and releases
 
 ## Install
@@ -97,6 +98,24 @@ address = (
 )
 ```
 
+## Transformation tracking
+
+Track what normalizations and cleanings were applied during parsing:
+
+```python
+from ryandata_address_utils import AddressService
+
+service = AddressService()
+result = service.parse("123 main st, austin texas 78749")
+
+# Aggregate logs from parsing and model transformations
+for entry in result.aggregate_logs():
+    print(f"{entry['field']}: {entry['message']}")
+# Example output:
+# StateName: Normalized state name from full name to abbreviation
+# ZipCode: ZIP code parsed and validated
+```
+
 ## Workflow at a glance
 
 ```mermaid
@@ -113,11 +132,15 @@ flowchart LR
 - `parse(...)`: convenience wrapper returning `ParseResult`
 - ZIP utilities: `get_city_state_from_zip`, `get_zip_info`, `is_valid_zip`, `is_valid_state`, `normalize_state`
 - Builder: `AddressBuilder` for programmatic address construction
+- Audit trail: `ProcessLog`, `ProcessEntry` for tracking transformations
+- Validation base: `ValidationBase`, `RyanDataValidationBase` for model mixins
 
 ## Documentation
 
 - **[Architecture Overview](docs/ARCHITECTURE.md)** - Package structure, data flow diagrams, design patterns, and SOLID/DRY principles applied
 - **[Diagrams](docs/diagrams.md)** - Visual references for the codebase
+- **[Changelog](CHANGELOG.md)** - Version history and release notes
+- **[AI Agent Guide](AGENTS.md)** - Guidance for AI coding assistants
 
 ## Development (uv)
 
