@@ -104,7 +104,7 @@ from ryandata_address_utils.validation import (
 )
 from ryandata_address_utils.validation.base import RyanDataValidationBase, ValidationBase
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"
 __package_name__ = "ryandata-address-utils"
 
 __all__ = [
