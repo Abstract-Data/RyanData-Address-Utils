@@ -67,7 +67,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.xml
-          flags: unittests,py${{ matrix.python-version }}
+          flags: unittests-py${{ matrix.python-version }}
           fail_ci_if_error: true
           verbose: true
 
