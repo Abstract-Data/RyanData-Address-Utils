@@ -1110,6 +1110,7 @@ def test_parse_international_failure_returns_error(monkeypatch) -> None:
 
 def test_to_series_errors_raise_without_error(monkeypatch) -> None:
     """to_series should raise RyanDataAddressError when invalid result has no error."""
+    pytest.importorskip("pandas")
     service = AddressService()
 
     def fake_parse(_addr, *, validate=True, expand=True):
@@ -1139,6 +1140,7 @@ def test_parse_international_no_libpostal(monkeypatch) -> None:
 
 def test_to_series_errors_raise_uses_result_error(monkeypatch) -> None:
     """to_series with errors='raise' should raise the parse error."""
+    pytest.importorskip("pandas")
     service = AddressService()
 
     def fake_parse(_addr, *, validate=True, expand=True):
@@ -1222,6 +1224,7 @@ def test_parse_auto_probably_international_path(monkeypatch) -> None:
 
 def test_to_series_errors_coerce_returns_none(monkeypatch) -> None:
     """to_series with errors='coerce' should return None fields on failure."""
+    pytest.importorskip("pandas")
     service = AddressService()
 
     def fake_parse(_addr, *, validate=True, expand=True):
