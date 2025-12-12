@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Union
 
 from ryandata_address_utils.data.base import BaseDataSource
+from ryandata_address_utils.data.constants import ALL_NAME_TO_ABBREV
 from ryandata_address_utils.models import ZipInfo
 
 
@@ -125,11 +126,13 @@ class CSVDataSource(BaseDataSource):
     def _get_state_name_mapping(self) -> dict[str, str]:
         """Get mapping of lowercase state names to abbreviations.
 
+        Returns the centralized ALL_NAME_TO_ABBREV constant which provides
+        the single source of truth for state and territory name mappings.
+
         Returns:
-            Dict mapping lowercase state name to abbreviation.
+            Dict mapping lowercase state/territory name to abbreviation.
         """
-        self._ensure_loaded()
-        return self._state_names.copy()
+        return ALL_NAME_TO_ABBREV
 
 
 @lru_cache(maxsize=1)

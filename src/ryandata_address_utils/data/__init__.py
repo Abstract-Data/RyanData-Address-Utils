@@ -7,6 +7,14 @@ for geographic validation data.
 from __future__ import annotations
 
 from ryandata_address_utils.data.base import BaseDataSource
+from ryandata_address_utils.data.constants import (
+    ALL_NAME_TO_ABBREV,
+    ALL_US_ABBREVS,
+    STATE_ABBREVS,
+    STATE_NAME_TO_ABBREV,
+    TERRITORY_ABBREVS,
+    TERRITORY_NAME_TO_ABBREV,
+)
 from ryandata_address_utils.data.csv_source import CSVDataSource, get_default_csv_source
 from ryandata_address_utils.data.factory import DataSourceFactory
 from ryandata_address_utils.models import ZipInfo
@@ -17,6 +25,13 @@ __all__ = [
     "DataSourceFactory",
     "ZipInfo",
     "get_default_csv_source",
+    # Centralized state constants
+    "STATE_NAME_TO_ABBREV",
+    "STATE_ABBREVS",
+    "TERRITORY_ABBREVS",
+    "TERRITORY_NAME_TO_ABBREV",
+    "ALL_US_ABBREVS",
+    "ALL_NAME_TO_ABBREV",
     # Backwards compatibility functions
     "get_zip_info",
     "is_valid_zip",

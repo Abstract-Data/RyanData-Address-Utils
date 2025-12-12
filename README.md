@@ -114,6 +114,11 @@ flowchart LR
 - ZIP utilities: `get_city_state_from_zip`, `get_zip_info`, `is_valid_zip`, `is_valid_state`, `normalize_state`
 - Builder: `AddressBuilder` for programmatic address construction
 
+## Documentation
+
+- **[Architecture Overview](docs/ARCHITECTURE.md)** - Package structure, data flow diagrams, design patterns, and SOLID/DRY principles applied
+- **[Diagrams](docs/diagrams.md)** - Visual references for the codebase
+
 ## Development (uv)
 
 ```bash
@@ -126,8 +131,25 @@ uv run mypy src/
 uv run ruff format src/
 ```
 
+## Agent Workflow (Cursor)
+
+This project uses a structured parallel agent workflow for AI-assisted development. See [`.cursor/agents.md`](.cursor/agents.md) for:
+
+- **STEP/AGENT naming convention** for organizing parallel tasks
+- **Specialized agents**: CodeAgent, TestAgent, DocsAgent, RefactorAgent, ConfigAgent
+- **Execution rules** for coordinating multi-agent work
+- **Task templates** for features, bug fixes, and refactoring
+
+Example todo format:
+```
+STEP1 - CodeAgent: Implement core data models
+STEP1 - TestAgent: Create test scaffolding
+STEP2 - CodeAgent: Wire up service layer (runs after STEP1)
+```
+
 ## Contributing and support
 
 - Issues: <https://github.com/Abstract-Data/RyanData-Address-Utils/issues>
 - Releases/notes: <https://github.com/Abstract-Data/RyanData-Address-Utils/releases>
+- Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - License: MIT

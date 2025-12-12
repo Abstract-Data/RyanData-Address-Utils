@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, ClassVar
 
+from ryandata_address_utils.core.factory import PluginFactory
 from ryandata_address_utils.protocols import DataSourceProtocol
 
 
-class DataSourceFactory:
+class DataSourceFactory(PluginFactory[DataSourceProtocol]):
     """Factory for creating data source instances.
 
     Supports registration of custom data source types and creation
@@ -20,7 +21,9 @@ class DataSourceFactory:
         >>> source = DataSourceFactory.create("sqlite", db_path="zips.db")
     """
 
-    _registry: dict[str, type] = {}
+    _registry: ClassVar[dict[str, type[DataSourceProtocol]]] = {}
+    _default_type: ClassVar[str] = "csv"
+    _entity_name: ClassVar[str] = "data source"
 
     @classmethod
     def _ensure_defaults_registered(cls) -> None:
@@ -30,39 +33,17 @@ class DataSourceFactory:
 
             cls._registry["csv"] = CSVDataSource
 
+    # Backward compatibility: keep the old parameter name in create()
     @classmethod
-    def register(
+    def create(  # type: ignore[override]
         cls,
-        source_type: str,
-        source_class: type[DataSourceProtocol],
-    ) -> None:
-        """Register a data source type.
-
-        Args:
-            source_type: Type name for the data source.
-            source_class: Class implementing DataSourceProtocol.
-        """
-        cls._registry[source_type] = source_class
-
-    @classmethod
-    def unregister(cls, source_type: str) -> None:
-        """Unregister a data source type.
-
-        Args:
-            source_type: Type name to unregister.
-        """
-        cls._registry.pop(source_type, None)
-
-    @classmethod
-    def create(
-        cls,
-        source_type: str = "csv",
+        source_type: str | None = None,
         **kwargs: Any,
     ) -> DataSourceProtocol:
         """Create a data source instance.
 
         Args:
-            source_type: Type of data source to create.
+            source_type: Type of data source to create. Defaults to "csv".
             **kwargs: Arguments to pass to the data source constructor.
 
         Returns:
@@ -71,28 +52,4 @@ class DataSourceFactory:
         Raises:
             ValueError: If the source type is not registered.
         """
-        cls._ensure_defaults_registered()
-
-        if source_type not in cls._registry:
-            available = ", ".join(sorted(cls._registry.keys()))
-            raise ValueError(
-                f"Unknown data source type: {source_type}. Available types: {available}"
-            )
-
-        source_class = cls._registry[source_type]
-        return source_class(**kwargs)  # type: ignore[no-any-return]
-
-    @classmethod
-    def available_types(cls) -> list[str]:
-        """Get list of available data source types.
-
-        Returns:
-            List of registered type names.
-        """
-        cls._ensure_defaults_registered()
-        return sorted(cls._registry.keys())
-
-    @classmethod
-    def clear_registry(cls) -> None:
-        """Clear the registry (mainly for testing)."""
-        cls._registry.clear()
+        return super().create(source_type, **kwargs)

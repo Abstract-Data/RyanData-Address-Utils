@@ -6,6 +6,8 @@ import warnings
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
+from ryandata_address_utils.core.address_formatter import recompute_full_address
+from ryandata_address_utils.core.tracking import TransformationTracker
 from ryandata_address_utils.data import DataSourceFactory
 from ryandata_address_utils.models import (
     ADDRESS_FIELDS,
@@ -212,6 +214,7 @@ class AddressService:
         _maybe_warn_libpostal_missing()
         self._parser = parser or ParserFactory.create()
         self._data_source = data_source or DataSourceFactory.create()
+        self._tracker = TransformationTracker()
 
         if validator is not None:
             self._validator = validator
@@ -257,6 +260,9 @@ class AddressService:
         result.source = "us"
         result.is_international = False
 
+        # Track address transformations that occurred during parsing
+        self._tracker.track_all(result, address_string)
+
         if validate and result.is_parsed and result.address is not None:
             result.validation = self._validator.validate(result.address)
             # Check for ZIP/state validation errors and raise PydanticCustomError
@@ -264,6 +270,7 @@ class AddressService:
 
         # Apply expansion and hashing if requested (and available)
         if expand and result.is_parsed and result.address is not None:
+            original_full_address = result.address.FullAddress
             expanded_str, addr_hash = self._expand_and_hash(address_string)
             if addr_hash:
                 result.address.AddressHash = addr_hash
@@ -271,6 +278,15 @@ class AddressService:
                 # User prefers expanded format (e.g. "Street" vs "St")
                 # We update FullAddress with the libpostal expansion if available
                 result.address.FullAddress = expanded_str
+                # Track the expansion operation
+                if original_full_address != expanded_str:
+                    result.add_process_cleaning(
+                        field="full_address",
+                        original_value=original_full_address,
+                        new_value=expanded_str,
+                        reason="Address expanded via libpostal (abbreviations expanded)",
+                        operation_type="expansion",
+                    )
 
         return result
 
@@ -291,8 +307,10 @@ class AddressService:
         """
         results = self._parser.parse_batch(addresses)
 
-        for result in results:
+        for i, result in enumerate(results):
             result.source = "us"
+            # Track address transformations that occurred during parsing
+            self._tracker.track_all(result, addresses[i])
 
         if validate:
             for result in results:
@@ -478,7 +496,13 @@ class AddressService:
                     "original_value": address.ZipCode5,
                     "error": zip5_error,
                 }
-                result.add_cleaning_operation("zip5", address.ZipCode5, zip5_error)
+                result.add_process_cleaning(
+                    field="zip5",
+                    original_value=address.ZipCode5,
+                    reason=zip5_error,
+                    new_value=None,
+                    operation_type="cleaning",
+                )
             else:
                 valid_components["zip5"] = cleaned_zip5
 
@@ -492,7 +516,13 @@ class AddressService:
                     "original_value": original_zip4,
                     "error": zip4_error,
                 }
-                result.add_cleaning_operation("zip4", original_zip4, zip4_error)
+                result.add_process_cleaning(
+                    field="zip4",
+                    original_value=original_zip4,
+                    reason=f"Invalid zip4 removed: {zip4_error}",
+                    new_value=None,
+                    operation_type="cleaning",
+                )
 
                 # Update the address to remove the invalid Zip4
                 address.ZipCode4 = None
@@ -501,7 +531,7 @@ class AddressService:
                     address.ZipCodeFull = address.ZipCode5
                     address.ZipCode = address.ZipCode5
                     # Recompute FullAddress with cleaned ZIP
-                    self._recompute_full_address(address)
+                    recompute_full_address(address)
             else:
                 valid_components["zip4"] = cleaned_zip4
 
@@ -517,35 +547,6 @@ class AddressService:
         result.invalid_components = invalid_components
 
         return result
-
-    def _recompute_full_address(self, address: Address) -> None:
-        """Recompute FullAddress after modifying ZIP components.
-
-        Args:
-            address: The Address object to update.
-        """
-        full_parts: list[str] = []
-
-        if address.Address1:
-            full_parts.append(address.Address1)
-        if address.Address2:
-            full_parts.append(address.Address2)
-
-        city_state_zip_parts: list[str] = []
-        if address.PlaceName:
-            city_state_zip_parts.append(address.PlaceName)
-
-        if address.StateName and address.ZipCodeFull:
-            city_state_zip_parts.append(f"{address.StateName} {address.ZipCodeFull}")
-        elif address.StateName:
-            city_state_zip_parts.append(address.StateName)
-        elif address.ZipCodeFull:
-            city_state_zip_parts.append(address.ZipCodeFull)
-
-        if city_state_zip_parts:
-            full_parts.append(", ".join(city_state_zip_parts))
-
-        address.FullAddress = ", ".join(full_parts)
 
     def parse_international(self, address_string: str, expand: bool = True) -> ParseResult:
         """Parse an address using libpostal if available."""
@@ -589,6 +590,8 @@ class AddressService:
             )
             addr_from_intl = _international_to_address(intl_address)
 
+            # Track expansion for international addresses
+            original_full_address = address_string
             if expand and normalized_addresses:
                 # Compute hash using the first expansion (same as _expand_and_hash)
                 expanded_str = normalized_addresses[0]
@@ -596,7 +599,7 @@ class AddressService:
                 addr_from_intl.AddressHash = addr_hash
                 # _international_to_address likely set FullAddress to normalized_full already
 
-            return ParseResult(
+            result = ParseResult(
                 raw_input=address_string,
                 address=addr_from_intl,
                 international_address=intl_address,
@@ -605,6 +608,20 @@ class AddressService:
                 source="international",
                 is_international=True,
             )
+
+            # Track expansion operation if address was normalized
+            if expand and normalized_addresses:
+                expanded_full = addr_from_intl.FullAddress
+                if original_full_address != expanded_full:
+                    result.add_process_cleaning(
+                        field="full_address",
+                        original_value=original_full_address,
+                        new_value=expanded_full,
+                        reason="Address expanded and normalized via libpostal",
+                        operation_type="expansion",
+                    )
+
+            return result
         except Exception as e:  # pragma: no cover
             return ParseResult(
                 raw_input=address_string,
@@ -645,9 +662,7 @@ class AddressService:
         # When allow_partial is True, we need to handle parsing differently
         # to catch validation errors for optional components without failing
         if allow_partial:
-            return self._parse_auto_partial(
-                address_string, validate=validate, expand=expand
-            )
+            return self._parse_auto_partial(address_string, validate=validate, expand=expand)
 
         try:
             us_result = self.parse(address_string, validate=validate, expand=expand)
@@ -753,10 +768,12 @@ class AddressService:
 
                     # If successful, track the cleaning operation
                     if result.is_parsed and result.address is not None:
-                        result.add_cleaning_operation(
-                            "zip4",
-                            invalid_zip4,
-                            f"Invalid zip4 format: {invalid_zip4}",
+                        result.add_process_cleaning(
+                            field="zip4",
+                            original_value=invalid_zip4,
+                            new_value=None,
+                            reason=f"Invalid zip4 format removed: {invalid_zip4}",
+                            operation_type="cleaning",
                         )
                         result.invalid_components["zip4"] = {
                             "original_value": invalid_zip4,
@@ -766,6 +783,9 @@ class AddressService:
         # If still not parsed, return the error result
         if not result.is_parsed or result.address is None:
             return result
+
+        # Track address transformations that occurred during parsing
+        self._tracker.track_all(result, address_string)
 
         # Apply partial validation - clean optional components (for already parsed)
         result = self._apply_partial_validation(result)
@@ -780,11 +800,21 @@ class AddressService:
 
         # Apply expansion and hashing if requested
         if expand and result.is_parsed and result.address is not None:
+            original_full_address = result.address.FullAddress
             expanded_str, addr_hash = self._expand_and_hash(address_string)
             if addr_hash:
                 result.address.AddressHash = addr_hash
             if expanded_str:
                 result.address.FullAddress = expanded_str
+                # Track the expansion operation
+                if original_full_address != expanded_str:
+                    result.add_process_cleaning(
+                        field="full_address",
+                        original_value=original_full_address,
+                        new_value=expanded_str,
+                        reason="Address expanded via libpostal (abbreviations expanded)",
+                        operation_type="expansion",
+                    )
 
         return result
 

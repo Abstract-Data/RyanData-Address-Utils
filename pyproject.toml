@@ -85,7 +85,7 @@ version_variables = [
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
 ignore = [
-    "UP007",  # Use X | Y - not compatible with Pydantic on Python 3.9
+    "UP007",  # Use X | Y - not compatible with Pydantic/typer on Python 3.9
 ]
 
 [tool.mypy]

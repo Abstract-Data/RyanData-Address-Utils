@@ -161,8 +161,13 @@ def test_setup_cli_prompted_data_dir(monkeypatch) -> None:
         confirm_calls.append(default)
         return False  # skip installs/downloads
 
+    def fake_default_data_dir(info):
+        # Return a path within the current working directory (isolated filesystem)
+        return Path.cwd() / "libpostal-data"
+
     monkeypatch.setattr(setup_cli.typer, "prompt", fake_prompt)
     monkeypatch.setattr(setup_cli.typer, "confirm", fake_confirm)
+    monkeypatch.setattr(setup_cli, "default_data_dir", fake_default_data_dir)
     monkeypatch.setattr(setup_cli, "check_libpostal", lambda data_dir: (True, None))
     monkeypatch.setattr(setup_cli, "install_libpostal", lambda *a, **k: None)
     monkeypatch.setattr(setup_cli, "download_archives", lambda *a, **k: None)

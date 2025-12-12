@@ -1,8 +1,15 @@
 from __future__ import annotations
 
-from ryandata_address_utils.models import Address, ValidationResult
+from typing import TYPE_CHECKING
+
+from ryandata_address_utils.core import ValidationResult
+from ryandata_address_utils.core.validation import CompositeValidator
+from ryandata_address_utils.core.zip_normalizer import ZipCodeNormalizer
 from ryandata_address_utils.protocols import DataSourceProtocol
 from ryandata_address_utils.validation.base import BaseValidator
+
+if TYPE_CHECKING:
+    from ryandata_address_utils.models import Address
 
 
 class ZipCodeValidator(BaseValidator):
@@ -122,69 +129,7 @@ class StateValidator(BaseValidator):
         return result
 
 
-class CompositeValidator(BaseValidator):
-    """Validator that combines multiple validators.
-
-    Runs all validators and aggregates their results.
-    """
-
-    def __init__(self, validators: list[BaseValidator]) -> None:
-        """Initialize composite validator.
-
-        Args:
-            validators: List of validators to run.
-        """
-        self._validators = validators
-
-    @property
-    def name(self) -> str:
-        """Name of this validator."""
-        return "composite"
-
-    def validate(self, address: Address) -> ValidationResult:
-        """Run all validators and combine results.
-
-        Args:
-            address: Address to validate.
-
-        Returns:
-            Combined ValidationResult from all validators.
-        """
-        result = ValidationResult(is_valid=True)
-
-        for validator in self._validators:
-            validator_result = validator.validate(address)
-            result.merge(validator_result)
-
-        return result
-
-    def add_validator(self, validator: BaseValidator) -> None:
-        """Add a validator to the composite.
-
-        Args:
-            validator: Validator to add.
-        """
-        self._validators.append(validator)
-
-    def remove_validator(self, name: str) -> bool:
-        """Remove a validator by name.
-
-        Args:
-            name: Name of the validator to remove.
-
-        Returns:
-            True if a validator was removed, False otherwise.
-        """
-        for i, v in enumerate(self._validators):
-            if v.name == name:
-                self._validators.pop(i)
-                return True
-        return False
-
-    @property
-    def validators(self) -> list[BaseValidator]:
-        """Get list of validators."""
-        return self._validators.copy()
+# CompositeValidator is imported from ryandata_address_utils.core.validation
 
 
 def create_default_validators(
@@ -212,9 +157,14 @@ def create_default_validators(
 # Component-level validation functions for partial validation
 # -----------------------------------------------------------------------------
 
+# Module-level normalizer instance for validation functions
+_zip_normalizer = ZipCodeNormalizer()
+
 
 def validate_zip5(zip_code: str | None) -> tuple[str | None, str | None]:
     """Validate a 5-digit ZIP code.
+
+    Delegates to ZipCodeNormalizer.validate_zip5() for consistent validation.
 
     Args:
         zip_code: The ZIP code string to validate.
@@ -224,18 +174,13 @@ def validate_zip5(zip_code: str | None) -> tuple[str | None, str | None]:
         cleaned_value is None if invalid.
         error_message is None if valid.
     """
-    if not zip_code or not isinstance(zip_code, str):
-        return None, "Missing or invalid zip code"
-
-    cleaned = zip_code.strip()
-    if len(cleaned) == 5 and cleaned.isdigit():
-        return cleaned, None
-    else:
-        return None, f"Invalid zip5 format: {zip_code}"
+    return _zip_normalizer.validate_zip5(zip_code)
 
 
 def validate_zip4(zip4: str | None) -> tuple[str | None, str | None]:
     """Validate a 4-digit ZIP+4 extension.
+
+    Delegates to ZipCodeNormalizer.validate_zip4() for consistent validation.
 
     Args:
         zip4: The ZIP+4 extension string to validate.
@@ -245,12 +190,4 @@ def validate_zip4(zip4: str | None) -> tuple[str | None, str | None]:
         cleaned_value is None if invalid or empty.
         error_message is None if valid or if zip4 is empty (zip4 is optional).
     """
-    if not zip4:  # Zip4 is optional - empty is valid
-        return None, None
-
-    if isinstance(zip4, str):
-        cleaned = zip4.strip()
-        if len(cleaned) == 4 and cleaned.isdigit():
-            return cleaned, None
-
-    return None, f"Invalid zip4 format: {zip4}"
+    return _zip_normalizer.validate_zip4(zip4)

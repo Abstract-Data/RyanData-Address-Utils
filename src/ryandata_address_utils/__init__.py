@@ -38,8 +38,24 @@ Quick Start:
     ... )
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
+# Import order is intentional to avoid circular imports - do not auto-fix
+from ryandata_address_utils.core import (
+    # Process logging (preferred for new code)
+    ProcessEntry,
+    ProcessLog,
+    # Legacy cleaning (deprecated, kept for compatibility)
+    CleaningMixin,
+    CleaningOperation,
+    CleaningTracker,
+    ValidationError,
+    ValidationResult,
+)
+from ryandata_address_utils.core import RyanDataError as CoreRyanDataError
+from ryandata_address_utils.core import (
+    RyanDataValidationError as CoreRyanDataValidationError,
+)
 from ryandata_address_utils.data import (
     BaseDataSource,
     CSVDataSource,
@@ -54,12 +70,9 @@ from ryandata_address_utils.models import (
     Address,
     AddressBuilder,
     AddressField,
-    CleaningOperation,
     ParseResult,
     RyanDataAddressError,
     RyanDataValidationError,
-    ValidationError,
-    ValidationResult,
     ZipInfo,
 )
 from ryandata_address_utils.pandas_ext import (
@@ -89,6 +102,7 @@ from ryandata_address_utils.validation import (
     validate_zip4,
     validate_zip5,
 )
+from ryandata_address_utils.validation.base import RyanDataValidationBase, ValidationBase
 
 __version__ = "0.5.0"
 __package_name__ = "ryandata-address-utils"
@@ -107,13 +121,25 @@ __all__ = [
     "AddressBuilder",
     "AddressField",
     "ADDRESS_FIELDS",
-    "CleaningOperation",
     "ParseResult",
-    "RyanDataAddressError",
-    "RyanDataValidationError",
+    "ZipInfo",
+    # Process logging (preferred for new code)
+    "ProcessEntry",
+    "ProcessLog",
+    "ValidationBase",
+    "RyanDataValidationBase",
+    # Legacy cleaning (deprecated, kept for compatibility)
+    "CleaningMixin",
+    "CleaningOperation",
+    "CleaningTracker",
+    # Core utilities
     "ValidationError",
     "ValidationResult",
-    "ZipInfo",
+    "CoreRyanDataError",
+    "CoreRyanDataValidationError",
+    # Address-specific errors
+    "RyanDataAddressError",
+    "RyanDataValidationError",
     # Protocols
     "AddressParserProtocol",
     "DataSourceProtocol",
