@@ -1,0 +1,33 @@
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+    patch:
+      default:
+        target: auto
+
+flag_management:
+  default_rules:
+    carryforward: true
+
+  individual_flags:
+    - name: unit
+      paths:
+        - src/ryandata_address_utils/parsers/
+        - src/ryandata_address_utils/models/
+        - src/ryandata_address_utils/core/
+        - src/ryandata_address_utils/validation/
+        - src/ryandata_address_utils/data/
+      carryforward: true
+
+    - name: integration
+      paths:
+        - src/ryandata_address_utils/pandas_ext.py
+        - src/ryandata_address_utils/service.py
+      carryforward: true
+
+    - name: cli
+      paths:
+        - src/ryandata_address_utils/setup_cli.py
+      carryforward: true
