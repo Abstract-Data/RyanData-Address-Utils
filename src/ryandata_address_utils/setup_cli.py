@@ -10,7 +10,6 @@ import tempfile
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 import typer
 
@@ -35,9 +34,6 @@ app = typer.Typer(help="Set up libpostal locally without Docker.")
 
 def _init_trogon(app: typer.Typer) -> None:
     """Optionally enable the Trogon TUI when supported."""
-
-    if sys.version_info < (3, 10):
-        return
     try:
         from trogon.typer import init_tui
     except Exception:
@@ -64,7 +60,7 @@ def _default_args(argv: list[str]) -> list[str]:
 @dataclass
 class PlatformInfo:
     name: str
-    distro: Optional[str] = None
+    distro: str | None = None
 
 
 def detect_platform() -> PlatformInfo:
@@ -79,7 +75,7 @@ def detect_platform() -> PlatformInfo:
     return PlatformInfo(name=system or "unknown")
 
 
-def _read_os_release() -> Optional[str]:
+def _read_os_release() -> str | None:
     os_release = Path("/etc/os-release")
     if not os_release.exists():
         return None
@@ -188,7 +184,7 @@ def data_present(path: Path) -> bool:
     return any(path.glob("*"))
 
 
-def check_libpostal(data_dir: Path) -> tuple[bool, Optional[str]]:
+def check_libpostal(data_dir: Path) -> tuple[bool, str | None]:
     """Verify libpostal bindings + data are usable."""
     try:
         if data_dir:
@@ -221,7 +217,7 @@ def ensure_postal_binding(*, dry_run: bool = False) -> None:
 
 @app.command()
 def setup(
-    data_dir: Optional[Path] = typer.Option(  # noqa: B008
+    data_dir: Path | None = typer.Option(  # noqa: B008
         None,
         "--data-dir",
         help="System-wide libpostal data directory (default depends on OS).",

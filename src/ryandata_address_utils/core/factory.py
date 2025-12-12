@@ -8,12 +8,10 @@ and how to register defaults.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar, Generic, TypeVar
-
-T = TypeVar("T")
+from typing import Any, ClassVar
 
 
-class PluginFactory(ABC, Generic[T]):
+class PluginFactory[T](ABC):
     """Generic factory for creating plugin instances from a registry.
 
     Subclasses should define:

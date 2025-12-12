@@ -2,17 +2,79 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ryandata_address_utils.core import ValidationResult
-from ryandata_address_utils.core.validation import CompositeValidator
+from abstract_validation_base import (
+    BaseValidator,
+    CompositeValidator,
+    ValidationResult,
+    ValidatorPipelineBuilder,
+)
+
 from ryandata_address_utils.core.zip_normalizer import ZipCodeNormalizer
 from ryandata_address_utils.protocols import DataSourceProtocol
-from ryandata_address_utils.validation.base import BaseValidator
 
 if TYPE_CHECKING:
     from ryandata_address_utils.models import Address
 
 
-class ZipCodeValidator(BaseValidator):
+class Zip5FormatValidator(BaseValidator["Address"]):
+    """Validates ZIP5 format (5 digits).
+
+    This is a fast format validator that doesn't require
+    external lookups - it only checks the format is correct.
+    """
+
+    @property
+    def name(self) -> str:
+        """Name of this validator."""
+        return "zip5_format"
+
+    def validate(self, address: Address) -> ValidationResult:
+        """Validate the ZIP5 format.
+
+        Args:
+            address: Address to validate.
+
+        Returns:
+            ValidationResult with any format errors.
+        """
+        result = ValidationResult(is_valid=True)
+        if address.ZipCode5:
+            cleaned, error = validate_zip5(address.ZipCode5)
+            if error:
+                result.add_error("ZipCode5", error, address.ZipCode5)
+        return result
+
+
+class Zip4FormatValidator(BaseValidator["Address"]):
+    """Validates ZIP4 extension format (4 digits).
+
+    This is a fast format validator that doesn't require
+    external lookups - it only checks the format is correct.
+    """
+
+    @property
+    def name(self) -> str:
+        """Name of this validator."""
+        return "zip4_format"
+
+    def validate(self, address: Address) -> ValidationResult:
+        """Validate the ZIP4 format.
+
+        Args:
+            address: Address to validate.
+
+        Returns:
+            ValidationResult with any format errors.
+        """
+        result = ValidationResult(is_valid=True)
+        if address.ZipCode4:
+            cleaned, error = validate_zip4(address.ZipCode4)
+            if error:
+                result.add_error("ZipCode4", error, address.ZipCode4)
+        return result
+
+
+class ZipCodeValidator(BaseValidator["Address"]):
     """Validator for ZIP codes.
 
     Validates that ZIP codes exist in the data source and
@@ -85,7 +147,7 @@ class ZipCodeValidator(BaseValidator):
         return result
 
 
-class StateValidator(BaseValidator):
+class StateValidator(BaseValidator["Address"]):
     """Validator for state names and abbreviations.
 
     Validates that state values are valid US states.
@@ -129,28 +191,36 @@ class StateValidator(BaseValidator):
         return result
 
 
-# CompositeValidator is imported from ryandata_address_utils.core.validation
-
-
 def create_default_validators(
     data_source: DataSourceProtocol,
     check_state_match: bool = False,
-) -> CompositeValidator:
-    """Create default set of validators.
+    include_format_validators: bool = True,
+) -> CompositeValidator[Address]:
+    """Create default address validation pipeline.
+
+    Uses ValidatorPipelineBuilder to construct a composable
+    validation pipeline with format and lookup validators.
 
     Args:
         data_source: Data source for validation lookups.
         check_state_match: If True, verify ZIP matches state.
+        include_format_validators: If True, include Zip5/Zip4 format validators.
 
     Returns:
         CompositeValidator with default validators configured.
     """
-    return CompositeValidator(
-        [
-            ZipCodeValidator(data_source, check_state_match=check_state_match),
-            StateValidator(data_source),
-        ]
-    )
+    builder: ValidatorPipelineBuilder[Address] = ValidatorPipelineBuilder("address_validation")
+
+    # Format validators (fast, no external lookups)
+    if include_format_validators:
+        builder.add(Zip5FormatValidator())
+        builder.add(Zip4FormatValidator())
+
+    # Lookup validators (require data source)
+    builder.add(ZipCodeValidator(data_source, check_state_match=check_state_match))
+    builder.add(StateValidator(data_source))
+
+    return builder.build()
 
 
 # -----------------------------------------------------------------------------

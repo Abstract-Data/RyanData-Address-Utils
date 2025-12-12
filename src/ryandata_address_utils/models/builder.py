@@ -6,9 +6,7 @@ Address objects with validation at build time.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
-
-from typing_extensions import Self
+from typing import TYPE_CHECKING, Self
 
 from ryandata_address_utils.models.enums import ADDRESS_FIELDS, AddressField
 from ryandata_address_utils.models.errors import PACKAGE_NAME, RyanDataAddressError
@@ -129,7 +127,7 @@ class AddressBuilder:
         self._data["Recipient"] = recipient
         return self
 
-    def with_field(self, field: Union[str, AddressField], value: str) -> Self:
+    def with_field(self, field: str | AddressField, value: str) -> Self:
         """Set an arbitrary field by name or enum."""
         field_name = field.value if isinstance(field, AddressField) else field
         if field_name not in ADDRESS_FIELDS:

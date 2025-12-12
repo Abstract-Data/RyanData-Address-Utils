@@ -10,8 +10,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
-from ryandata_address_utils.core import ValidationResult
-from ryandata_address_utils.core.process_log import ProcessEntry, ProcessLog
+from abstract_validation_base import ProcessEntry, ProcessLog, ValidationResult
 
 if TYPE_CHECKING:
     from ryandata_address_utils.models.address import Address, InternationalAddress

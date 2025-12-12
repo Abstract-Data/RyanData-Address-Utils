@@ -1,6 +1,6 @@
 [project]
 name = "ryandata-address-utils"
-version = "0.6.0"
+version = "0.7.0"
 description = "A Python address parser using usaddress with Pydantic models, validation, and extensible architecture"
 readme = "README.md"
 license = { text = "MIT" }
@@ -13,15 +13,12 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Text Processing",
     "Typing :: Typed",
 ]
-requires-python = ">=3.9,<=3.13"
+requires-python = ">=3.12.8,<=3.13"
 dependencies = [
     "pydantic>=2.0.0",
     "usaddress>=0.5.16",
@@ -29,6 +26,7 @@ dependencies = [
     "typer>=0.12.5",
     "trogon>=0.6.0",
     "eval-type-backport>=0.3.1",
+    "abstract-validation-base @ git+https://github.com/Abstract-Data/abstract-validation-base.git",
 ]
 
 [project.optional-dependencies]
@@ -62,6 +60,9 @@ dev = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.metadata]
+allow-direct-references = true
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/ryandata_address_utils"]
 
@@ -73,7 +74,7 @@ include = [
 ]
 
 [tool.ruff]
-target-version = "py39"
+target-version = "py312"
 line-length = 100
 
 [tool.semantic_release]
@@ -84,16 +85,10 @@ version_variables = [
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
-ignore = [
-    "UP007",  # Use X | Y - not compatible with Pydantic on Python 3.9
-    "UP045",  # Use X | None - not compatible with typer on Python 3.9
-]
 
 [tool.mypy]
-# Note: mypy 1.13.0+ requires python_version >= 3.9
-# The package supports Python 3.8+, but we use 3.9 for type checking
-# All files use 'from __future__ import annotations' for forward compatibility
-python_version = "3.9"
+# Package requires Python 3.12+ due to abstract-validation-base dependency
+python_version = "3.12"
 warn_return_any = true
 warn_unused_ignores = true
 disallow_untyped_defs = true

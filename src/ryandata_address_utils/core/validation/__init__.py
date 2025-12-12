@@ -1,11 +1,14 @@
 """Generic validation infrastructure.
 
 Provides base classes and protocols for building validators
-for any model type.
+for any model type. Re-exports from abstract_validation_base.
 """
 
-from ryandata_address_utils.core.validation.base import BaseValidator
-from ryandata_address_utils.core.validation.composite import CompositeValidator
-from ryandata_address_utils.core.validation.protocols import ValidatorProtocol
+from abstract_validation_base import (
+    BaseValidator,
+    CompositeValidator,
+    ValidatorPipelineBuilder,
+    ValidatorProtocol,
+)
 
-__all__ = ["BaseValidator", "CompositeValidator", "ValidatorProtocol"]
+__all__ = ["BaseValidator", "CompositeValidator", "ValidatorProtocol", "ValidatorPipelineBuilder"]

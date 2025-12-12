@@ -2,32 +2,30 @@ name: Tests
 
 on:
   push:
-    branches: [main]
+    branches: [main, master]
   pull_request:
-    branches: [main]
-
-permissions:
-  contents: read
-  pull-requests: write
+    branches: [main, master]
 
 jobs:
   test:
-    name: Pytest - Python ${{ matrix.python-version }}
+    name: Run tests - Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.12", "3.13"]
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
-          enable-cache: true
-          cache-dependency-glob: "pyproject.toml"
 
-      - name: Set up Python
+      - name: Set up Python ${{ matrix.python-version }}
         run: uv python install ${{ matrix.python-version }}
 
       - name: Cache libpostal
@@ -52,26 +50,22 @@ jobs:
 
       - name: Setup libpostal environment
         run: |
-          # Export paths so subsequent steps can find libpostal
           echo "LIBPOSTAL_DATA_DIR=$HOME/.local/share/libpostal" >> "$GITHUB_ENV"
           echo "LD_LIBRARY_PATH=$HOME/.local/lib:${LD_LIBRARY_PATH:-}" >> "$GITHUB_ENV"
           echo "PKG_CONFIG_PATH=$HOME/.local/lib/pkgconfig:${PKG_CONFIG_PATH:-}" >> "$GITHUB_ENV"
           echo "CPATH=$HOME/.local/include:${CPATH:-}" >> "$GITHUB_ENV"
 
       - name: Install dependencies
-        run: uv sync --group dev --all-extras
+        run: uv sync --all-extras --dev
 
-      - name: Run tests
-        run: uv run pytest tests/ --cov --junitxml=junit.xml -o junit_family=legacy --cov=src/ryandata_address_utils --cov-report=xml --cov-report=term
+      - name: Test with pytest
+        run: |
+          uv run pytest --cov --cov-report=xml --junitxml=junit.xml
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage.xml
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
 
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}

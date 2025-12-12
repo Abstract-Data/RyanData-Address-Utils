@@ -5,7 +5,6 @@ from collections.abc import Iterator
 from functools import lru_cache
 from importlib import resources
 from pathlib import Path
-from typing import Union
 
 from ryandata_address_utils.data.base import BaseDataSource
 from ryandata_address_utils.data.constants import ALL_NAME_TO_ABBREV
@@ -21,7 +20,7 @@ class CSVDataSource(BaseDataSource):
 
     def __init__(
         self,
-        csv_path: Union[str, Path] | None = None,
+        csv_path: str | Path | None = None,
         cache_size: int = 10000,
     ) -> None:
         """Initialize CSV data source.

@@ -6,8 +6,9 @@ for representing parsed address data.
 
 from __future__ import annotations
 
+from typing import Self
+
 from pydantic import AliasChoices, ConfigDict, Field, model_validator
-from typing_extensions import Self
 
 from ryandata_address_utils.core import ValidationResult
 from ryandata_address_utils.core.address_formatter import (
