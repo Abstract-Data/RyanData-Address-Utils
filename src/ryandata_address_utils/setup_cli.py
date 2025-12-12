@@ -38,7 +38,7 @@ def _init_trogon(app: typer.Typer) -> None:
         from trogon.typer import init_tui
     except Exception:
         return
-    init_tui(app, command="tui", help="Open interactive setup UI.")
+    init_tui(app, name="tui")
 
 
 _init_trogon(app)

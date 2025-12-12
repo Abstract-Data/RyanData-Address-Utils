@@ -15,7 +15,7 @@ def test_setup_cli_dry_run(monkeypatch) -> None:
         data_dir = Path(tmp_dir) / "libpostal-data"
         result = runner.invoke(
             setup_cli.app,
-            [f"--data-dir={data_dir}", "--dry-run", "--yes"],
+            ["setup", f"--data-dir={data_dir}", "--dry-run", "--yes"],
         )
 
     assert result.exit_code == 0
@@ -31,7 +31,7 @@ def test_setup_cli_check_only(monkeypatch) -> None:
         data_dir = Path(tmp_dir) / "libpostal-data"
         result = runner.invoke(
             setup_cli.app,
-            [f"--data-dir={data_dir}", "--check-only", "--yes"],
+            ["setup", f"--data-dir={data_dir}", "--check-only", "--yes"],
         )
 
     assert result.exit_code == 1  # check_only with failed check should exit 1
@@ -65,7 +65,7 @@ def test_setup_cli_yes_triggers_download(monkeypatch) -> None:
         data_dir = Path(tmp_dir) / "libpostal-data"
         result = runner.invoke(
             setup_cli.app,
-            [f"--data-dir={data_dir}", "--yes", "--dry-run"],
+            ["setup", f"--data-dir={data_dir}", "--yes", "--dry-run"],
         )
 
     assert result.exit_code == 1  # final check still fails because fake check returns False
@@ -83,7 +83,7 @@ def test_setup_cli_check_only_success(monkeypatch) -> None:
         data_dir = Path(tmp_dir) / "libpostal-data"
         result = runner.invoke(
             setup_cli.app,
-            [f"--data-dir={data_dir}", "--check-only", "--yes"],
+            ["setup", f"--data-dir={data_dir}", "--check-only", "--yes"],
         )
 
     assert result.exit_code == 0
@@ -141,7 +141,7 @@ def test_setup_cli_final_success(monkeypatch, tmp_path: Path) -> None:
         data_dir = Path(tmp_dir) / "libpostal-data"
         result = runner.invoke(
             setup_cli.app,
-            [f"--data-dir={data_dir}", "--yes"],
+            ["setup", f"--data-dir={data_dir}", "--yes"],
         )
 
     assert result.exit_code == 0
@@ -174,7 +174,7 @@ def test_setup_cli_prompted_data_dir(monkeypatch) -> None:
     monkeypatch.setattr(setup_cli, "ensure_postal_binding", lambda **k: None)
 
     with runner.isolated_filesystem():
-        result = runner.invoke(setup_cli.app, ["--dry-run"])
+        result = runner.invoke(setup_cli.app, ["setup", "--dry-run"])
 
     assert result.exit_code == 0
     assert prompt_calls  # prompt was used
@@ -190,7 +190,7 @@ def test_setup_cli_final_failure(monkeypatch, tmp_path: Path) -> None:
 
     result = runner.invoke(
         setup_cli.app,
-        [f"--data-dir={tmp_path}", "--yes", "--dry-run"],
+        ["setup", f"--data-dir={tmp_path}", "--yes", "--dry-run"],
     )
 
     assert result.exit_code == 1
@@ -211,7 +211,7 @@ def test_setup_cli_existing_data_redownload(monkeypatch, tmp_path: Path) -> None
 
     result = runner.invoke(
         setup_cli.app,
-        [f"--data-dir={tmp_path}", "--dry-run"],
+        ["setup", f"--data-dir={tmp_path}", "--dry-run"],
     )
 
     assert result.exit_code == 0
