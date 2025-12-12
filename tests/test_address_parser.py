@@ -1372,3 +1372,311 @@ def test_parse_auto_advanced_complex_addresses(addr: str) -> None:
     assert result.source in {"us", "international"}
     assert result.error is None
     assert result.address is not None or result.international_address is not None
+
+
+# =============================================================================
+# Partial Validation Tests
+# =============================================================================
+
+
+class TestPartialValidation:
+    """Test partial validation functionality."""
+
+    def test_allow_partial_false_maintains_strict_behavior(self) -> None:
+        """With allow_partial=False (default), strict validation should apply."""
+        from ryandata_address_utils import parse_auto
+
+        # Valid address should work
+        result = parse_auto("123 Main St, Austin TX 78749", allow_partial=False)
+        assert result.is_valid
+        assert result.address is not None
+        assert not result.has_cleaning_operations()
+
+    def test_allow_partial_true_valid_address_no_cleaning(self) -> None:
+        """With allow_partial=True, valid addresses should have no cleaning operations."""
+        from ryandata_address_utils import parse_auto
+
+        result = parse_auto("123 Main St, Austin TX 78749", allow_partial=True)
+        assert result.is_valid
+        assert result.address is not None
+        assert not result.has_cleaning_operations()
+        assert len(result.cleaning_operations) == 0
+
+    def test_allow_partial_true_invalid_zip4_cleans_and_keeps_valid(self) -> None:
+        """With allow_partial=True, invalid Zip4 should be cleaned while keeping address valid."""
+        from ryandata_address_utils import parse_auto
+
+        # Address with invalid Zip4 (3 digits instead of 4)
+        result = parse_auto("123 Main St, Austin TX 78749-123", allow_partial=True)
+
+        # Should have a cleaning operation for zip4
+        assert result.has_cleaning_operations()
+        assert len(result.cleaning_operations) >= 1
+
+        # Check cleaning operation details
+        cleaning_report = result.get_cleaning_report()
+        zip4_cleaned = any(op["component"] == "zip4" for op in cleaning_report)
+        assert zip4_cleaned
+
+        # Address should still be valid (Zip5 is correct)
+        if result.address is not None:
+            # Zip4 should be cleared
+            assert result.address.ZipCode4 is None
+            # Zip5 should remain
+            assert result.address.ZipCode5 == "78749"
+            # ZipCodeFull should be just Zip5
+            assert result.address.ZipCodeFull == "78749"
+
+    def test_allow_partial_true_invalid_zip4_alpha_chars(self) -> None:
+        """With allow_partial=True, Zip4 with alpha chars should be cleaned."""
+        from ryandata_address_utils import parse_auto
+
+        # Address with Zip4 containing letters
+        result = parse_auto("123 Main St, Austin TX 78749-12AB", allow_partial=True)
+
+        # Should have cleaning operation
+        assert result.has_cleaning_operations()
+
+        cleaning_report = result.get_cleaning_report()
+        zip4_cleaned = any(op["component"] == "zip4" for op in cleaning_report)
+        assert zip4_cleaned
+
+    def test_has_cleaning_operations_returns_correct_bool(self) -> None:
+        """has_cleaning_operations() should return correct boolean."""
+        from ryandata_address_utils import parse_auto
+
+        # No cleaning needed
+        result = parse_auto("123 Main St, Austin TX 78749", allow_partial=True)
+        assert result.has_cleaning_operations() is False
+
+    def test_get_cleaning_report_returns_list_of_dicts(self) -> None:
+        """get_cleaning_report() should return list of dictionaries."""
+        from ryandata_address_utils import parse_auto
+
+        result = parse_auto("123 Main St, Austin TX 78749-123", allow_partial=True)
+
+        report = result.get_cleaning_report()
+        assert isinstance(report, list)
+
+        if len(report) > 0:
+            # Check structure of cleaning operation dict
+            op = report[0]
+            assert "component" in op
+            assert "original_value" in op
+            assert "reason" in op
+            assert "timestamp" in op
+
+    def test_get_cleaning_summary_returns_counts(self) -> None:
+        """get_cleaning_summary() should return counts by component type."""
+        from ryandata_address_utils import parse_auto
+
+        result = parse_auto("123 Main St, Austin TX 78749-ABC", allow_partial=True)
+
+        summary = result.get_cleaning_summary()
+        assert isinstance(summary, dict)
+
+        # If there was a cleaning operation, it should be counted
+        if result.has_cleaning_operations():
+            assert len(summary) > 0
+            for key, value in summary.items():
+                assert isinstance(key, str)
+                assert isinstance(value, int)
+                assert value >= 1
+
+    def test_cleaning_operation_tracks_original_value(self) -> None:
+        """Cleaning operations should track the original invalid value."""
+        from ryandata_address_utils import parse_auto
+
+        result = parse_auto("123 Main St, Austin TX 78749-ABC", allow_partial=True)
+
+        if result.has_cleaning_operations():
+            report = result.get_cleaning_report()
+            zip4_ops = [op for op in report if op["component"] == "zip4"]
+            if zip4_ops:
+                # Original value should be tracked
+                assert zip4_ops[0]["original_value"] is not None
+
+    def test_cleaning_operation_has_timestamp(self) -> None:
+        """Cleaning operations should have ISO format timestamps."""
+        from datetime import datetime
+
+        from ryandata_address_utils import parse_auto
+
+        result = parse_auto("123 Main St, Austin TX 78749-X", allow_partial=True)
+
+        if result.has_cleaning_operations():
+            report = result.get_cleaning_report()
+            for op in report:
+                # Should be parseable as ISO timestamp
+                timestamp = op["timestamp"]
+                assert timestamp is not None
+                # Should not raise
+                datetime.fromisoformat(timestamp)
+
+    def test_cleaned_components_dict_populated(self) -> None:
+        """cleaned_components dict should track valid components."""
+        from ryandata_address_utils import parse_auto
+
+        result = parse_auto("123 Main St, Austin TX 78749", allow_partial=True)
+
+        # Should have some cleaned components
+        assert isinstance(result.cleaned_components, dict)
+        # For a valid address, zip5 should be in cleaned_components
+        if result.address is not None and result.address.ZipCode5:
+            assert "zip5" in result.cleaned_components
+
+    def test_invalid_components_dict_populated(self) -> None:
+        """invalid_components dict should track invalid components."""
+        from ryandata_address_utils import parse_auto
+
+        result = parse_auto("123 Main St, Austin TX 78749-BAD", allow_partial=True)
+
+        assert isinstance(result.invalid_components, dict)
+        # For an address with bad Zip4, it should be in invalid_components
+        if result.has_cleaning_operations():
+            assert "zip4" in result.invalid_components
+            assert "original_value" in result.invalid_components["zip4"]
+            assert "error" in result.invalid_components["zip4"]
+
+    def test_address_service_parse_auto_allow_partial(self) -> None:
+        """AddressService.parse_auto should support allow_partial parameter."""
+        service = AddressService()
+        result = service.parse_auto(
+            "123 Main St, Austin TX 78749-XYZ",
+            validate=True,
+            allow_partial=True,
+        )
+
+        # Should have cleaning operations for invalid Zip4
+        assert result.has_cleaning_operations()
+
+    def test_partial_validation_with_valid_zip_plus_4(self) -> None:
+        """Valid ZIP+4 should not be cleaned when using partial validation."""
+        from ryandata_address_utils import parse_auto
+
+        result = parse_auto("123 Main St, Austin TX 78749-1234", allow_partial=True)
+
+        # No cleaning should occur for valid ZIP+4
+        assert not result.has_cleaning_operations()
+        assert result.is_valid
+        if result.address is not None:
+            assert result.address.ZipCode4 == "1234"
+            assert result.address.ZipCodeFull == "78749-1234"
+
+
+class TestCleaningOperationDataclass:
+    """Test CleaningOperation dataclass."""
+
+    def test_cleaning_operation_import(self) -> None:
+        """CleaningOperation should be importable from main package."""
+        from ryandata_address_utils import CleaningOperation
+
+        # Create a cleaning operation
+        op = CleaningOperation(
+            component="zip4",
+            original_value="12AB",
+            reason="Invalid zip4 format",
+            timestamp="2025-01-01T00:00:00",
+        )
+        assert op.component == "zip4"
+        assert op.original_value == "12AB"
+        assert op.reason == "Invalid zip4 format"
+        assert op.timestamp == "2025-01-01T00:00:00"
+
+
+class TestValidationFunctions:
+    """Test component validation functions."""
+
+    def test_validate_zip5_valid(self) -> None:
+        """validate_zip5 should return cleaned value for valid input."""
+        from ryandata_address_utils import validate_zip5
+
+        cleaned, error = validate_zip5("78749")
+        assert cleaned == "78749"
+        assert error is None
+
+    def test_validate_zip5_with_whitespace(self) -> None:
+        """validate_zip5 should strip whitespace."""
+        from ryandata_address_utils import validate_zip5
+
+        cleaned, error = validate_zip5("  78749  ")
+        assert cleaned == "78749"
+        assert error is None
+
+    def test_validate_zip5_invalid_length(self) -> None:
+        """validate_zip5 should return error for wrong length."""
+        from ryandata_address_utils import validate_zip5
+
+        cleaned, error = validate_zip5("1234")
+        assert cleaned is None
+        assert error is not None
+        assert "Invalid zip5 format" in error
+
+    def test_validate_zip5_invalid_chars(self) -> None:
+        """validate_zip5 should return error for non-digit chars."""
+        from ryandata_address_utils import validate_zip5
+
+        cleaned, error = validate_zip5("7874A")
+        assert cleaned is None
+        assert error is not None
+
+    def test_validate_zip5_empty(self) -> None:
+        """validate_zip5 should return error for empty input."""
+        from ryandata_address_utils import validate_zip5
+
+        cleaned, error = validate_zip5("")
+        assert cleaned is None
+        assert error is not None
+
+    def test_validate_zip5_none(self) -> None:
+        """validate_zip5 should return error for None input."""
+        from ryandata_address_utils import validate_zip5
+
+        cleaned, error = validate_zip5(None)
+        assert cleaned is None
+        assert error is not None
+
+    def test_validate_zip4_valid(self) -> None:
+        """validate_zip4 should return cleaned value for valid input."""
+        from ryandata_address_utils import validate_zip4
+
+        cleaned, error = validate_zip4("1234")
+        assert cleaned == "1234"
+        assert error is None
+
+    def test_validate_zip4_with_whitespace(self) -> None:
+        """validate_zip4 should strip whitespace."""
+        from ryandata_address_utils import validate_zip4
+
+        cleaned, error = validate_zip4("  1234  ")
+        assert cleaned == "1234"
+        assert error is None
+
+    def test_validate_zip4_empty_is_valid(self) -> None:
+        """validate_zip4 should treat empty/None as valid (optional field)."""
+        from ryandata_address_utils import validate_zip4
+
+        cleaned, error = validate_zip4("")
+        assert cleaned is None
+        assert error is None
+
+        cleaned, error = validate_zip4(None)
+        assert cleaned is None
+        assert error is None
+
+    def test_validate_zip4_invalid_length(self) -> None:
+        """validate_zip4 should return error for wrong length."""
+        from ryandata_address_utils import validate_zip4
+
+        cleaned, error = validate_zip4("123")
+        assert cleaned is None
+        assert error is not None
+        assert "Invalid zip4 format" in error
+
+    def test_validate_zip4_invalid_chars(self) -> None:
+        """validate_zip4 should return error for non-digit chars."""
+        from ryandata_address_utils import validate_zip4
+
+        cleaned, error = validate_zip4("12AB")
+        assert cleaned is None
+        assert error is not None

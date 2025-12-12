@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
-from typing import Union
+from typing import Any, Union
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
 from pydantic_core import PydanticCustomError
@@ -671,6 +673,19 @@ class ValidationError:
 
 
 @dataclass
+class CleaningOperation:
+    """Record of a component cleaning operation.
+
+    Tracks when an address component was cleaned/removed during partial validation.
+    """
+
+    component: str
+    original_value: str | None
+    reason: str
+    timestamp: str  # ISO format
+
+
+@dataclass
 class ValidationResult:
     """Result of address validation."""
 
@@ -692,7 +707,10 @@ class ValidationResult:
 
 @dataclass
 class ParseResult:
-    """Result of address parsing."""
+    """Result of address parsing.
+
+    Extended to support partial validation with component-level cleaning tracking.
+    """
 
     raw_input: str
     address: Address | None = None
@@ -701,6 +719,10 @@ class ParseResult:
     validation: ValidationResult | None = None
     source: str | None = None  # "us" or "international"
     is_international: bool | None = None
+    # Partial validation tracking fields
+    cleaned_components: dict[str, Any] = field(default_factory=dict)
+    invalid_components: dict[str, dict[str, Any]] = field(default_factory=dict)
+    cleaning_operations: list[CleaningOperation] = field(default_factory=list)
 
     @property
     def is_valid(self) -> bool:
@@ -728,6 +750,57 @@ class ParseResult:
         if self.address:
             return self.address.to_dict()
         return {f: None for f in ADDRESS_FIELDS}
+
+    def add_cleaning_operation(
+        self, component: str, original_value: Any, reason: str
+    ) -> None:
+        """Track a cleaning operation performed during partial validation.
+
+        Args:
+            component: Name of the address component that was cleaned.
+            original_value: The original value before cleaning.
+            reason: Explanation of why the component was cleaned.
+        """
+        self.cleaning_operations.append(
+            CleaningOperation(
+                component=component,
+                original_value=original_value,
+                reason=reason,
+                timestamp=datetime.now().isoformat(),
+            )
+        )
+
+    def has_cleaning_operations(self) -> bool:
+        """Check if any components were cleaned during partial validation.
+
+        Returns:
+            True if any cleaning operations were performed.
+        """
+        return len(self.cleaning_operations) > 0
+
+    def get_cleaning_report(self) -> list[dict[str, Any]]:
+        """Get cleaning operations as a list of dictionaries for export.
+
+        Returns:
+            List of dictionaries with cleaning operation details.
+        """
+        return [
+            {
+                "component": op.component,
+                "original_value": op.original_value,
+                "reason": op.reason,
+                "timestamp": op.timestamp,
+            }
+            for op in self.cleaning_operations
+        ]
+
+    def get_cleaning_summary(self) -> dict[str, int]:
+        """Get summary counts of cleaning operations by component type.
+
+        Returns:
+            Dictionary mapping component names to count of cleaning operations.
+        """
+        return dict(Counter(op.component for op in self.cleaning_operations))
 
 
 class AddressBuilder:

@@ -18,7 +18,11 @@ from ryandata_address_utils.models import (
     ZipInfo,
 )
 from ryandata_address_utils.parsers import ParserFactory
-from ryandata_address_utils.validation.validators import create_default_validators
+from ryandata_address_utils.validation.validators import (
+    create_default_validators,
+    validate_zip4,
+    validate_zip5,
+)
 
 # Optional libpostal import for international parsing
 try:
@@ -443,6 +447,106 @@ class AddressService:
         except Exception:
             return None, None
 
+    def _apply_partial_validation(self, result: ParseResult) -> ParseResult:
+        """Apply partial validation logic to clean optional components.
+
+        This method validates individual address components and cleans/removes
+        invalid optional components (like Zip4) while keeping the address valid.
+        Required components (street, city, state, zip5) will still cause errors
+        if invalid.
+
+        Args:
+            result: The ParseResult to validate and potentially clean.
+
+        Returns:
+            The same ParseResult with cleaned components and tracking info.
+        """
+        if not result.is_parsed or result.address is None:
+            return result
+
+        address = result.address
+
+        # Track valid/invalid components - preserve any existing invalid_components
+        valid_components: dict[str, object] = {}
+        invalid_components: dict[str, dict[str, object]] = dict(result.invalid_components)
+
+        # Validate Zip5 (required for a valid US address)
+        if address.ZipCode5:
+            cleaned_zip5, zip5_error = validate_zip5(address.ZipCode5)
+            if zip5_error:
+                invalid_components["zip5"] = {
+                    "original_value": address.ZipCode5,
+                    "error": zip5_error,
+                }
+                result.add_cleaning_operation("zip5", address.ZipCode5, zip5_error)
+            else:
+                valid_components["zip5"] = cleaned_zip5
+
+        # Validate Zip4 (optional - clean if invalid, don't fail address)
+        if address.ZipCode4:
+            cleaned_zip4, zip4_error = validate_zip4(address.ZipCode4)
+            if zip4_error:
+                # Clean the invalid Zip4 - set to None
+                original_zip4 = address.ZipCode4
+                invalid_components["zip4"] = {
+                    "original_value": original_zip4,
+                    "error": zip4_error,
+                }
+                result.add_cleaning_operation("zip4", original_zip4, zip4_error)
+
+                # Update the address to remove the invalid Zip4
+                address.ZipCode4 = None
+                # Update ZipCodeFull to only have 5-digit ZIP
+                if address.ZipCode5:
+                    address.ZipCodeFull = address.ZipCode5
+                    address.ZipCode = address.ZipCode5
+                    # Recompute FullAddress with cleaned ZIP
+                    self._recompute_full_address(address)
+            else:
+                valid_components["zip4"] = cleaned_zip4
+
+        # Track other components as valid (we're not cleaning them in this phase)
+        if address.AddressNumber or address.StreetName:
+            valid_components["street"] = address.Address1
+        if address.PlaceName:
+            valid_components["city"] = address.PlaceName
+        if address.StateName:
+            valid_components["state"] = address.StateName
+
+        result.cleaned_components = valid_components
+        result.invalid_components = invalid_components
+
+        return result
+
+    def _recompute_full_address(self, address: Address) -> None:
+        """Recompute FullAddress after modifying ZIP components.
+
+        Args:
+            address: The Address object to update.
+        """
+        full_parts: list[str] = []
+
+        if address.Address1:
+            full_parts.append(address.Address1)
+        if address.Address2:
+            full_parts.append(address.Address2)
+
+        city_state_zip_parts: list[str] = []
+        if address.PlaceName:
+            city_state_zip_parts.append(address.PlaceName)
+
+        if address.StateName and address.ZipCodeFull:
+            city_state_zip_parts.append(f"{address.StateName} {address.ZipCodeFull}")
+        elif address.StateName:
+            city_state_zip_parts.append(address.StateName)
+        elif address.ZipCodeFull:
+            city_state_zip_parts.append(address.ZipCodeFull)
+
+        if city_state_zip_parts:
+            full_parts.append(", ".join(city_state_zip_parts))
+
+        address.FullAddress = ", ".join(full_parts)
+
     def parse_international(self, address_string: str, expand: bool = True) -> ParseResult:
         """Parse an address using libpostal if available."""
         if lp_parse_address is None:
@@ -513,12 +617,37 @@ class AddressService:
             )
 
     def parse_auto(
-        self, address_string: str, *, validate: bool = True, expand: bool = True
+        self,
+        address_string: str,
+        *,
+        validate: bool = True,
+        expand: bool = True,
+        allow_partial: bool = False,
     ) -> ParseResult:
-        """Try US parse first; if invalid or fails and libpostal is available, fall back."""
+        """Try US parse first; if invalid or fails and libpostal is available, fall back.
+
+        Args:
+            address_string: Raw address string to parse.
+            validate: If True, validate the parsed address.
+            expand: If True, expand address using libpostal (if available).
+            allow_partial: If True, allow partial validation where optional components
+                          (like Zip4) can be cleaned/removed while keeping the address
+                          valid. Invalid required components will still raise errors.
+
+        Returns:
+            ParseResult containing the parsed address, validation results,
+            cleaning operations (if allow_partial=True), or error information.
+        """
         # If clearly international, skip US path
         if _is_probably_international(address_string) and lp_parse_address is not None:
             return self.parse_international(address_string, expand=expand)
+
+        # When allow_partial is True, we need to handle parsing differently
+        # to catch validation errors for optional components without failing
+        if allow_partial:
+            return self._parse_auto_partial(
+                address_string, validate=validate, expand=expand
+            )
 
         try:
             us_result = self.parse(address_string, validate=validate, expand=expand)
@@ -567,6 +696,97 @@ class AddressService:
         if intl_result.address:
             intl_result.address.IsInternational = True
         return intl_result
+
+    def _parse_auto_partial(
+        self,
+        address_string: str,
+        *,
+        validate: bool = True,
+        expand: bool = True,
+    ) -> ParseResult:
+        """Parse with partial validation - cleans optional components instead of failing.
+
+        This internal method handles partial validation where invalid optional
+        components (like Zip4) are cleaned/removed while keeping the address valid.
+        Only required component failures (street, city, state, zip5) raise errors.
+
+        Args:
+            address_string: Raw address string to parse.
+            validate: If True, validate the parsed address.
+            expand: If True, expand address using libpostal (if available).
+
+        Returns:
+            ParseResult with cleaned components and tracking information.
+        """
+        import re
+
+        # First, try normal parsing
+        result = self._parser.parse(address_string)
+        result.source = "us"
+        result.is_international = False
+
+        # If parsing failed due to ZIP4 validation error, try to clean and re-parse
+        if result.error is not None and result.address is None:
+            error_str = str(result.error)
+            if "ZipCode4" in error_str or "zip4" in error_str.lower():
+                # Extract the invalid ZIP4 from the address and try again
+                # Pattern matches: 5-digit ZIP followed by dash and any non-space chars
+                zip_plus4_pattern = r"(\d{5})-([^\s,]+)"
+                match = re.search(zip_plus4_pattern, address_string)
+
+                if match:
+                    zip5 = match.group(1)
+                    invalid_zip4 = match.group(2)
+
+                    # Create a cleaned address string with just the ZIP5
+                    cleaned_address = re.sub(
+                        zip_plus4_pattern,
+                        zip5,
+                        address_string,
+                        count=1,
+                    )
+
+                    # Try parsing the cleaned address
+                    result = self._parser.parse(cleaned_address)
+                    result.source = "us"
+                    result.is_international = False
+
+                    # If successful, track the cleaning operation
+                    if result.is_parsed and result.address is not None:
+                        result.add_cleaning_operation(
+                            "zip4",
+                            invalid_zip4,
+                            f"Invalid zip4 format: {invalid_zip4}",
+                        )
+                        result.invalid_components["zip4"] = {
+                            "original_value": invalid_zip4,
+                            "error": f"Invalid zip4 format: {invalid_zip4}",
+                        }
+
+        # If still not parsed, return the error result
+        if not result.is_parsed or result.address is None:
+            return result
+
+        # Apply partial validation - clean optional components (for already parsed)
+        result = self._apply_partial_validation(result)
+
+        # Now run regular validation for required components
+        if validate and result.address is not None:
+            result.validation = self._validator.validate(result.address)
+            # Only raise for required component errors (ZipCode lookup, StateName)
+            # These are considered "required" in the sense that if provided,
+            # they should be valid
+            result.address.validate_external_results(result.validation)
+
+        # Apply expansion and hashing if requested
+        if expand and result.is_parsed and result.address is not None:
+            expanded_str, addr_hash = self._expand_and_hash(address_string)
+            if addr_hash:
+                result.address.AddressHash = addr_hash
+            if expanded_str:
+                result.address.FullAddress = expanded_str
+
+        return result
 
     def parse_auto_route(self, address_string: str, *, validate: bool = True) -> ParseResult:
         """Deprecated alias for parse_auto."""
@@ -705,10 +925,28 @@ def parse_us_only(address_string: str, *, validate: bool = True) -> ParseResult:
     return get_default_service().parse_us_only(address_string, validate=validate)
 
 
-def parse_auto(address_string: str, *, validate: bool = True) -> ParseResult:
-    """Auto route: try US, then libpostal."""
+def parse_auto(
+    address_string: str,
+    *,
+    validate: bool = True,
+    allow_partial: bool = False,
+) -> ParseResult:
+    """Auto route: try US, then libpostal.
 
-    return get_default_service().parse_auto(address_string, validate=validate)
+    Args:
+        address_string: Raw address string to parse.
+        validate: If True, validate the parsed address.
+        allow_partial: If True, allow partial validation where optional components
+                      (like Zip4) can be cleaned/removed while keeping the address
+                      valid. Invalid required components will still raise errors.
+
+    Returns:
+        ParseResult containing the parsed address, validation results,
+        cleaning operations (if allow_partial=True), or error information.
+    """
+    return get_default_service().parse_auto(
+        address_string, validate=validate, allow_partial=allow_partial
+    )
 
 
 def parse_auto_route(address_string: str, *, validate: bool = True) -> ParseResult:

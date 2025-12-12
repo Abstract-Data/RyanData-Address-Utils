@@ -54,6 +54,7 @@ from ryandata_address_utils.models import (
     Address,
     AddressBuilder,
     AddressField,
+    CleaningOperation,
     ParseResult,
     RyanDataAddressError,
     RyanDataValidationError,
@@ -85,6 +86,8 @@ from ryandata_address_utils.validation import (
     CompositeValidator,
     StateValidator,
     ZipCodeValidator,
+    validate_zip4,
+    validate_zip5,
 )
 
 __version__ = "0.5.0"
@@ -104,6 +107,7 @@ __all__ = [
     "AddressBuilder",
     "AddressField",
     "ADDRESS_FIELDS",
+    "CleaningOperation",
     "ParseResult",
     "RyanDataAddressError",
     "RyanDataValidationError",
@@ -127,6 +131,8 @@ __all__ = [
     "CompositeValidator",
     "StateValidator",
     "ZipCodeValidator",
+    "validate_zip4",
+    "validate_zip5",
     # Convenience functions
     "get_zip_info",
     "is_valid_zip",

@@ -206,3 +206,51 @@ def create_default_validators(
             StateValidator(data_source),
         ]
     )
+
+
+# -----------------------------------------------------------------------------
+# Component-level validation functions for partial validation
+# -----------------------------------------------------------------------------
+
+
+def validate_zip5(zip_code: str | None) -> tuple[str | None, str | None]:
+    """Validate a 5-digit ZIP code.
+
+    Args:
+        zip_code: The ZIP code string to validate.
+
+    Returns:
+        Tuple of (cleaned_value, error_message).
+        cleaned_value is None if invalid.
+        error_message is None if valid.
+    """
+    if not zip_code or not isinstance(zip_code, str):
+        return None, "Missing or invalid zip code"
+
+    cleaned = zip_code.strip()
+    if len(cleaned) == 5 and cleaned.isdigit():
+        return cleaned, None
+    else:
+        return None, f"Invalid zip5 format: {zip_code}"
+
+
+def validate_zip4(zip4: str | None) -> tuple[str | None, str | None]:
+    """Validate a 4-digit ZIP+4 extension.
+
+    Args:
+        zip4: The ZIP+4 extension string to validate.
+
+    Returns:
+        Tuple of (cleaned_value, error_message).
+        cleaned_value is None if invalid or empty.
+        error_message is None if valid or if zip4 is empty (zip4 is optional).
+    """
+    if not zip4:  # Zip4 is optional - empty is valid
+        return None, None
+
+    if isinstance(zip4, str):
+        cleaned = zip4.strip()
+        if len(cleaned) == 4 and cleaned.isdigit():
+            return cleaned, None
+
+    return None, f"Invalid zip4 format: {zip4}"

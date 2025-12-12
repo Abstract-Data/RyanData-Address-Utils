@@ -9,6 +9,8 @@ from ryandata_address_utils.validation.validators import (
     CompositeValidator,
     StateValidator,
     ZipCodeValidator,
+    validate_zip4,
+    validate_zip5,
 )
 
 __all__ = [
@@ -16,4 +18,6 @@ __all__ = [
     "CompositeValidator",
     "StateValidator",
     "ZipCodeValidator",
+    "validate_zip4",
+    "validate_zip5",
 ]
