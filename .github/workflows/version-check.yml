@@ -33,17 +33,17 @@ jobs:
           # Get version from pyproject.toml
           PYPROJECT_VERSION=$(uv version | awk '{print $2}')
           echo "pyproject.toml version: $PYPROJECT_VERSION"
-
-          # Get version from __init__.py (using sed for portability)
-          INIT_VERSION=$(grep '__version__' src/ryandata_address_utils/__init__.py | sed 's/.*"\(.*\)".*/\1/')
+          
+          # Get version from __init__.py (match only the assignment line, not __all__)
+          INIT_VERSION=$(grep -E '^__version__ = ' src/ryandata_address_utils/__init__.py | sed 's/__version__ = "\(.*\)"/\1/')
           echo "__init__.py version: $INIT_VERSION"
-
+          
           # Compare versions
           if [ "$PYPROJECT_VERSION" != "$INIT_VERSION" ]; then
             echo "❌ Version mismatch!"
             exit 1
           fi
-
+          
           echo "✅ Versions are in sync: $PYPROJECT_VERSION"
           echo "version=$PYPROJECT_VERSION" >> $GITHUB_OUTPUT
 
@@ -71,17 +71,17 @@ jobs:
         run: |
           VERSION="${{ needs.check-version-sync.outputs.version }}"
           echo "VERSION: '$VERSION'"
-
+          
           if [ -z "$VERSION" ]; then
             echo "ERROR: VERSION is empty!"
             exit 1
           fi
-
+          
           TAG_NAME="v$VERSION"
           echo "Checking for tag: $TAG_NAME"
           echo "Existing tags:"
           git tag -l
-
+          
           if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
             echo "Tag $TAG_NAME exists locally"
             echo "created=false" >> $GITHUB_OUTPUT

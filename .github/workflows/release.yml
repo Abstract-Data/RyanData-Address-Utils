@@ -50,7 +50,7 @@ jobs:
         id: bump
         run: |
           BUMP_TYPE="${{ inputs.bump }}"
-
+          
           # For alpha/beta/rc, we need to bump minor first if not already a prerelease
           if [[ "$BUMP_TYPE" =~ ^(alpha|beta|rc)$ ]]; then
             CURRENT_VERSION=$(uv version --short)
@@ -62,12 +62,12 @@ jobs:
           else
             uv version --bump "$BUMP_TYPE"
           fi
-
+          
           # Get the new version
           NEW_VERSION=$(uv version --short)
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "New version: $NEW_VERSION"
-
+          
           # Check if it's a prerelease version
           if [[ "$NEW_VERSION" =~ (a|b|rc)[0-9]+ ]]; then
             echo "is_prerelease=true" >> $GITHUB_OUTPUT
@@ -78,9 +78,9 @@ jobs:
       - name: Sync version to __init__.py
         run: |
           VERSION="${{ steps.bump.outputs.new_version }}"
-          sed -i "s/__version__ = \".*\"/__version__ = \"$VERSION\"/" src/ryandata_address_utils/__init__.py
+          sed -i "s/^__version__ = \".*\"/__version__ = \"$VERSION\"/" src/ryandata_address_utils/__init__.py
           echo "Updated __init__.py to version $VERSION"
-          cat src/ryandata_address_utils/__init__.py | grep __version__
+          grep -E '^__version__ = ' src/ryandata_address_utils/__init__.py
 
       - name: Commit version bump
         run: |
