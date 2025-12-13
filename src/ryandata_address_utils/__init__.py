@@ -51,6 +51,8 @@ from ryandata_address_utils.core import (
     CleaningTracker,
     ValidationError,
     ValidationResult,
+    # Transformation tracking
+    OperationType,
 )
 from ryandata_address_utils.core import RyanDataError as CoreRyanDataError
 from ryandata_address_utils.core import (
@@ -137,6 +139,8 @@ __all__ = [
     "ValidationResult",
     "CoreRyanDataError",
     "CoreRyanDataValidationError",
+    # Transformation tracking
+    "OperationType",
     # Address-specific errors
     "RyanDataAddressError",
     "RyanDataValidationError",

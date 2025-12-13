@@ -21,7 +21,25 @@ class RyanDataAddressError(PydanticCustomError):
     Can wrap:
     - PydanticCustomError: Preserves original error details
     - pydantic.ValidationError: Extracts PydanticCustomError if present, otherwise converts
+
+    The `loc` property provides Pydantic-compatible location tuple for ValidationRunner
+    to extract field names from errors.
     """
+
+    @property
+    def loc(self) -> tuple[str, ...]:
+        """Return Pydantic-compatible location tuple for ValidationRunner.
+
+        This allows ValidationRunner from abstract_validation_base to extract
+        the field name from the error for reporting purposes.
+
+        Returns:
+            Tuple containing the field name if available in context, otherwise ("unknown",).
+        """
+        ctx = self.context or {}
+        if "field" in ctx:
+            return (ctx["field"],)
+        return ("unknown",)
 
     @classmethod
     def from_pydantic_error(cls, error: PydanticCustomError) -> RyanDataAddressError:

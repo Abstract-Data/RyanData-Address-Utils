@@ -1,6 +1,6 @@
 [project]
 name = "ryandata-address-utils"
-version = "0.7.1"
+version = "0.7.2"
 description = "A Python address parser using usaddress with Pydantic models, validation, and extensible architecture"
 readme = "README.md"
 license = { text = "MIT" }

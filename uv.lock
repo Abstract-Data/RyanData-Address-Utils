@@ -4,8 +4,8 @@ requires-python = ">=3.12.8, <=3.13"
 
 [[package]]
 name = "abstract-validation-base"
-version = "0.3.0a1"
-source = { git = "https://github.com/Abstract-Data/abstract-validation-base.git#d4e3c21b0f439f7f49f205c99c76b8f7a7c1b880" }
+version = "0.4.0"
+source = { git = "https://github.com/Abstract-Data/abstract-validation-base.git#a10705f185481869d2bcad3e82996a348cb1b902" }
 dependencies = [
     { name = "pydantic" },
     { name = "rich" },
@@ -909,7 +909,7 @@ wheels = [
 
 [[package]]
 name = "ryandata-address-utils"
-version = "0.7.1"
+version = "0.7.2"
 source = { editable = "." }
 dependencies = [
     { name = "abstract-validation-base" },

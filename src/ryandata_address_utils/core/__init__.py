@@ -57,7 +57,13 @@ from ryandata_address_utils.core.cleaning import (
 )
 from ryandata_address_utils.core.errors import RyanDataError, RyanDataValidationError
 from ryandata_address_utils.core.factory import PluginFactory
-from ryandata_address_utils.core.tracking import TransformationTracker
+from ryandata_address_utils.core.tracking import (
+    DIRECTION_TO_ABBREV,
+    STREET_TYPE_TO_ABBREV,
+    UNIT_TYPE_TO_ABBREV,
+    OperationType,
+    TransformationTracker,
+)
 from ryandata_address_utils.core.zip_normalizer import (
     ZipCodeNormalizer,
     ZipCodeResult,
@@ -80,6 +86,10 @@ __all__ = [
     "CleaningTracker",
     # Transformation tracking
     "TransformationTracker",
+    "OperationType",
+    "STREET_TYPE_TO_ABBREV",
+    "DIRECTION_TO_ABBREV",
+    "UNIT_TYPE_TO_ABBREV",
     # Validation (from abstract_validation_base)
     "BaseValidator",
     "CompositeValidator",
