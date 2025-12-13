@@ -12,6 +12,7 @@ wheels/
 # IDE
 .idea/
 .vscode/
+.cursor/
 *.swp
 *.swo
 
@@ -23,6 +24,8 @@ Thumbs.db
 .hypothesis/
 .pytest_cache/
 .coverage
+coverage.xml
+junit.xml
 htmlcov/
 
 # Data cache
