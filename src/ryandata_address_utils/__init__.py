@@ -106,7 +106,11 @@ from ryandata_address_utils.validation import (
 )
 from ryandata_address_utils.validation.base import RyanDataValidationBase, ValidationBase
 
-__version__ = "0.7.2"
+# Dynamic version from package metadata (set in pyproject.toml)
+# This eliminates the need to manually sync versions
+from importlib.metadata import version as _get_version
+
+__version__ = _get_version("ryandata-address-utils")
 __package_name__ = "ryandata-address-utils"
 
 __all__ = [

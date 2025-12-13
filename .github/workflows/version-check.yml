@@ -34,13 +34,18 @@ jobs:
           PYPROJECT_VERSION=$(uv version | awk '{print $2}')
           echo "pyproject.toml version: $PYPROJECT_VERSION"
 
-          # Get version from __init__.py (match only the assignment line, not __all__)
-          INIT_VERSION=$(grep -E '^__version__ = ' src/ryandata_address_utils/__init__.py | sed 's/__version__ = "\(.*\)"/\1/')
-          echo "__init__.py version: $INIT_VERSION"
+          # Install package to verify dynamic version works
+          uv sync
+
+          # Get version from installed package (dynamic versioning)
+          PACKAGE_VERSION=$(uv run python -c "from ryandata_address_utils import __version__; print(__version__)")
+          echo "Package version: $PACKAGE_VERSION"
 
           # Compare versions
-          if [ "$PYPROJECT_VERSION" != "$INIT_VERSION" ]; then
+          if [ "$PYPROJECT_VERSION" != "$PACKAGE_VERSION" ]; then
             echo "❌ Version mismatch!"
+            echo "pyproject.toml: $PYPROJECT_VERSION"
+            echo "Package: $PACKAGE_VERSION"
             exit 1
           fi
 
