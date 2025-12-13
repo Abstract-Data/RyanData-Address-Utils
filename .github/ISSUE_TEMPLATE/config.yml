@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions & Discussions
+    url: https://github.com/Abstract-Data/RyanData-Address-Utils/discussions
+    about: For questions, help, and general discussion - please use GitHub Discussions instead of opening an issue.
+  - name: Security Vulnerabilities
+    url: https://github.com/Abstract-Data/RyanData-Address-Utils/security/advisories/new
+    about: Report security vulnerabilities privately through GitHub Security Advisories.
