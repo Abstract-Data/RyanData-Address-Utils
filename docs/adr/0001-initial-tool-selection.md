@@ -19,8 +19,8 @@ tradeoffs), pandas interop for bulk processing, and a CLI for interactive use.
   (e.g., libpostal) can be registered without touching call sites.
 - **`typer` + `trogon`** for the CLI, giving both a scriptable interface and an interactive TUI.
 - **uv** as the package manager (lockfile-based, fast installs) over pip/poetry.
-- **ruff** for lint + format, **mypy** (strict mode, `disallow_untyped_defs`) for type checking,
-  **pytest** + **pytest-cov** for testing.
+- **ruff** for lint + format, **ty** (Astral's Rust-based type checker) for type checking,
+  **pytest** + **pytest-cov** for testing. See ADR 0002 for why ty over mypy.
 - **AI agent governance**: a local, self-contained enforcement layer (`.claude/hooks/gate.py` +
   companion hooks) rather than a cloud-tooling-coupled one — this package is distributed to
   collaborators who won't have access to any particular vendor's private tooling account, so the
@@ -30,7 +30,7 @@ tradeoffs), pandas interop for bulk processing, and a CLI for interactive use.
 
 - Swapping the parser backend is a registration call, not a rewrite, at the cost of an extra
   `Protocol` indirection layer.
-- Strict mypy catches type errors early but requires discipline on every new public function.
+- ty catches type errors early but requires discipline on every new public function.
 - The enforcement-hook layer only checks what's actually installed locally (ruff/ty/pytest via
   uv) — it does not depend on any account-gated service being reachable, so it works identically
   for every contributor who clones the repo.

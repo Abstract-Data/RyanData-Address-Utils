@@ -64,11 +64,11 @@ class RyanDataValidationBase(ValidationBase):
         Returns:
             RyanDataAddressError instance.
         """
-        # Late import to avoid circular dependency with models.py
+        # Late import to avoid a circular dependency with the models package
         from ryandata_address_utils.models import RyanDataAddressError
 
         return RyanDataAddressError(
-            error_type,
-            message,
+            error_type,  # ty: ignore[invalid-argument-type]
+            message,  # ty: ignore[invalid-argument-type]
             {"package": "ryandata_address_utils", **(context or {})},
         )

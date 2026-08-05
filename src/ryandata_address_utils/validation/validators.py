@@ -28,20 +28,20 @@ class Zip5FormatValidator(BaseValidator["Address"]):
         """Name of this validator."""
         return "zip5_format"
 
-    def validate(self, address: Address) -> ValidationResult:
+    def validate(self, item: Address) -> ValidationResult:
         """Validate the ZIP5 format.
 
         Args:
-            address: Address to validate.
+            item: Address to validate.
 
         Returns:
             ValidationResult with any format errors.
         """
         result = ValidationResult(is_valid=True)
-        if address.ZipCode5:
-            cleaned, error = validate_zip5(address.ZipCode5)
+        if item.ZipCode5:
+            cleaned, error = validate_zip5(item.ZipCode5)
             if error:
-                result.add_error("ZipCode5", error, address.ZipCode5)
+                result.add_error("ZipCode5", error, item.ZipCode5)
         return result
 
 
@@ -57,20 +57,20 @@ class Zip4FormatValidator(BaseValidator["Address"]):
         """Name of this validator."""
         return "zip4_format"
 
-    def validate(self, address: Address) -> ValidationResult:
+    def validate(self, item: Address) -> ValidationResult:
         """Validate the ZIP4 format.
 
         Args:
-            address: Address to validate.
+            item: Address to validate.
 
         Returns:
             ValidationResult with any format errors.
         """
         result = ValidationResult(is_valid=True)
-        if address.ZipCode4:
-            cleaned, error = validate_zip4(address.ZipCode4)
+        if item.ZipCode4:
+            cleaned, error = validate_zip4(item.ZipCode4)
             if error:
-                result.add_error("ZipCode4", error, address.ZipCode4)
+                result.add_error("ZipCode4", error, item.ZipCode4)
         return result
 
 
@@ -100,48 +100,48 @@ class ZipCodeValidator(BaseValidator["Address"]):
         """Name of this validator."""
         return "zip_code"
 
-    def validate(self, address: Address) -> ValidationResult:
+    def validate(self, item: Address) -> ValidationResult:
         """Validate the ZIP code in an address.
 
         Args:
-            address: Address to validate.
+            item: Address to validate.
 
         Returns:
             ValidationResult with any ZIP code errors.
         """
         result = ValidationResult(is_valid=True)
 
-        if address.ZipCodeFull is None and address.ZipCode5 is None:
+        if item.ZipCodeFull is None and item.ZipCode5 is None:
             # No ZIP code to validate
             return result
 
         # Prefer ZipCode5 for lookup
-        zip_clean = (address.ZipCode5 or "").strip()
-        if not zip_clean and address.ZipCodeFull:
-            zip_clean = address.ZipCodeFull.split("-")[0].strip()
+        zip_clean = (item.ZipCode5 or "").strip()
+        if not zip_clean and item.ZipCodeFull:
+            zip_clean = item.ZipCodeFull.split("-")[0].strip()
 
         # Check if ZIP exists
         zip_info = self._data_source.get_zip_info(zip_clean)
         if zip_info is None:
             result.add_error(
                 field="ZipCode",
-                message=f"Invalid US ZIP code: {address.ZipCodeFull or address.ZipCode}",
-                value=address.ZipCodeFull or address.ZipCode,
+                message=f"Invalid US ZIP code: {item.ZipCodeFull or item.ZipCode}",
+                value=item.ZipCodeFull or item.ZipCode,
             )
             return result
 
         # Optionally check state match
-        if self._check_state_match and address.StateName is not None:
-            normalized_state = self._data_source.normalize_state(address.StateName)
+        if self._check_state_match and item.StateName is not None:
+            normalized_state = self._data_source.normalize_state(item.StateName)
             if normalized_state and normalized_state != zip_info.state_id:
                 result.add_error(
                     field="ZipCode",
                     message=(
                         "ZIP code "
-                        f"{address.ZipCodeFull or address.ZipCode} "
+                        f"{item.ZipCodeFull or item.ZipCode} "
                         f"is in {zip_info.state_id}, not {normalized_state}"
                     ),
-                    value=address.ZipCodeFull or address.ZipCode,
+                    value=item.ZipCodeFull or item.ZipCode,
                 )
 
         return result
@@ -166,26 +166,26 @@ class StateValidator(BaseValidator["Address"]):
         """Name of this validator."""
         return "state"
 
-    def validate(self, address: Address) -> ValidationResult:
+    def validate(self, item: Address) -> ValidationResult:
         """Validate the state in an address.
 
         Args:
-            address: Address to validate.
+            item: Address to validate.
 
         Returns:
             ValidationResult with any state errors.
         """
         result = ValidationResult(is_valid=True)
 
-        if address.StateName is None:
+        if item.StateName is None:
             # No state to validate
             return result
 
-        if not self._data_source.is_valid_state(address.StateName):
+        if not self._data_source.is_valid_state(item.StateName):
             result.add_error(
                 field="StateName",
-                message=f"Invalid US state: {address.StateName}",
-                value=address.StateName,
+                message=f"Invalid US state: {item.StateName}",
+                value=item.StateName,
             )
 
         return result

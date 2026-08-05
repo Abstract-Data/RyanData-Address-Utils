@@ -27,7 +27,10 @@ class RyanDataError(PydanticCustomError):
         context: dict | None = None,
     ):
         ctx = {"package": package_name, **(context or {})}
-        super().__init__(error_type, message_template, ctx)
+        # pydantic_core's stub requires LiteralString for error_type/message_template,
+        # but this wrapper's entire purpose is accepting dynamic, runtime-determined
+        # values — that's not achievable while keeping the API flexible.
+        super().__init__(error_type, message_template, ctx)  # ty: ignore[invalid-argument-type]
 
     @classmethod
     def from_pydantic_error(cls, package_name: str, error: PydanticCustomError) -> RyanDataError:

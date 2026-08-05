@@ -349,7 +349,7 @@ class Address(RyanDataValidationBase):
             if error.field in ("ZipCode", "StateName"):
                 raise RyanDataAddressError(
                     "address_validation",
-                    error.message,
+                    error.message,  # ty: ignore[invalid-argument-type]
                     {"package": PACKAGE_NAME, "field": error.field, "value": error.value},
                 )
 

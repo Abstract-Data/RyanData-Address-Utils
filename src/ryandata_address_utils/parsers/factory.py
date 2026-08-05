@@ -34,7 +34,7 @@ class ParserFactory(PluginFactory[AddressParserProtocol]):
 
     # Backward compatibility: keep the old parameter name in create()
     @classmethod
-    def create(  # type: ignore[override]
+    def create(
         cls,
         parser_type: str | None = None,
         **kwargs: Any,

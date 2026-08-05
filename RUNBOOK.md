@@ -38,7 +38,7 @@ uv run python -m pisd_shape.main
 ```bash
 uv run ruff check src tests    # lint
 uv run ruff format src tests   # format
-uv run mypy src                # type check
+uv run ty check src             # type check
 ```
 
 ## Dependency Updates

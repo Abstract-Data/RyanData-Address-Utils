@@ -6,8 +6,11 @@ globs: "*.py"
 
 - **Formatter/linter:** Ruff (`ruff format`, `ruff check` with `E, F, I, UP, B, SIM` rule sets).
   Line length 100.
-- **Type checker:** mypy in strict mode (`disallow_untyped_defs = true`) — every new public
-  function needs full type annotations.
+- **Type checker:** ty (`uv run ty check src`) — every new public function needs full type
+  annotations. Real diagnostics get fixed at the source, not suppressed; a suppression comment
+  (`# ty: ignore[rule-name]`, on the exact flagged line) is only for genuine stub limitations
+  (e.g. `pydantic_core.PydanticCustomError`'s overly-strict `LiteralString` params) or deps that
+  can't be a normal dev dependency (libpostal's system C library + data files).
 - **Pydantic models:** use `Field()` with a `description` for every field; use `AliasChoices` for
   fields with multiple accepted input names (see `models/address.py`).
 - **Protocols over ABCs:** new extension points go in `protocols.py` as `Protocol` classes, not

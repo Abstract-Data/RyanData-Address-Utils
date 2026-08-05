@@ -35,7 +35,7 @@ class DataSourceFactory(PluginFactory[DataSourceProtocol]):
 
     # Backward compatibility: keep the old parameter name in create()
     @classmethod
-    def create(  # type: ignore[override]
+    def create(
         cls,
         source_type: str | None = None,
         **kwargs: Any,

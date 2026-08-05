@@ -68,7 +68,7 @@ class USAddressParser(BaseAddressParser):
         except Exception as e:
             raise RyanDataAddressError(
                 "address_parsing",
-                f"Failed to parse address: {e}",
+                f"Failed to parse address: {e}",  # ty: ignore[invalid-argument-type]
                 {"package": PACKAGE_NAME, "input": address_string},
             ) from e
 

@@ -2,12 +2,11 @@
 
 [![Tests](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/tests.yml/badge.svg)](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/tests.yml)
 [![Ruff](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/lint.yml/badge.svg)](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/lint.yml)
-[![MyPy](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/typecheck.yml/badge.svg)](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/typecheck.yml)
+[![Type Check (ty)](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/typecheck.yml/badge.svg)](https://github.com/Abstract-Data/RyanData-Address-Utils/actions/workflows/typecheck.yml)
 [![codecov](https://codecov.io/gh/Abstract-Data/RyanData-Address-Utils/graph/badge.svg?token=75LQK4KJTZ)](https://codecov.io/gh/Abstract-Data/RyanData-Address-Utils)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![uv](https://img.shields.io/badge/packaging-uv-9055ff.svg)](https://github.com/astral-sh/uv)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![codecov](https://codecov.io/gh/Abstract-Data/RyanData-Address-Utils/branch/main/graph/badge.svg)](https://codecov.io/gh/Abstract-Data/RyanData-Address-Utils)
 
 Parse and validate US addresses with Pydantic models, ZIP/state validation, pandas integration, and semantic-release powered CI.
 
@@ -151,7 +150,7 @@ cd RyanData-Address-Utils
 uv sync
 uv run pytest
 uv run ruff check src/
-uv run mypy src/
+uv run ty check src/
 uv run ruff format src/
 ```
 

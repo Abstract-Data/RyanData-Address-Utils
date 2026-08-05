@@ -59,7 +59,7 @@ This document provides context for AI coding assistants (Claude, GPT, Copilot, C
 
 - **Formatter:** Ruff (`ruff format`)
 - **Linter:** Ruff with `E, F, I, UP, B, SIM` rule sets
-- **Type Checker:** MyPy in strict mode (`disallow_untyped_defs = true`)
+- **Type Checker:** ty (Astral's Rust-based type checker; `[tool.ty.environment]` in pyproject.toml)
 - **Line Length:** 100 characters
 
 ### Pydantic Models
@@ -167,7 +167,7 @@ uv sync                          # Install dependencies
 uv run pytest                    # Run tests
 uv run ruff check src/           # Lint
 uv run ruff format src/          # Format
-uv run mypy src/                 # Type check
+uv run ty check src/             # Type check
 uv run ryandata-address-utils-setup  # Setup libpostal (optional)
 ```
 
@@ -352,7 +352,7 @@ uv run ruff check src tests
 uv run ruff format src tests
 
 # Type checking
-uv run mypy src
+uv run ty check src
 
 # Tests
 uv run pytest
@@ -369,7 +369,7 @@ uv run pytest
 
 These run automatically on PRs:
 - `ruff check` and `ruff format --check`
-- `mypy src`
+- `ty check src`
 - `pytest --cov`
 
 PRs cannot be merged until all CI checks pass.

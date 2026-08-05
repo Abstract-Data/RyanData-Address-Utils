@@ -107,11 +107,13 @@ class ValidatorProtocol(Protocol):
     (ZIP codes, states, etc.) and return validation results.
     """
 
-    def validate(self, address: Address) -> ValidationResult:
+    def validate(self, item: Address) -> ValidationResult:
         """Validate an address.
 
         Args:
-            address: Address object to validate.
+            item: Address object to validate. Named to match
+                `abstract_validation_base.BaseValidator.validate`'s parameter,
+                which every real implementation of this protocol subclasses.
 
         Returns:
             ValidationResult containing validation status and any errors.

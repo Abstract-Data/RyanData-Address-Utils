@@ -67,8 +67,13 @@ class PluginFactory[T](ABC):
         cls._registry.pop(name, None)
 
     @classmethod
-    def create(cls, name: str | None = None, **kwargs: Any) -> T:
+    def create(cls, name: str | None = None, /, **kwargs: Any) -> T:
         """Create an instance of the specified type.
+
+        `name` is positional-only so subclasses can override it with a more
+        descriptive parameter name (e.g. `source_type`, `parser_type`) without
+        that being a Liskov substitution violation — no caller may pass `name`
+        as a keyword, so the name itself isn't part of the interface contract.
 
         Args:
             name: Type name to create. If None, uses the default type.
