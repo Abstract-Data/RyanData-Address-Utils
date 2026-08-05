@@ -19,14 +19,13 @@ Output:
 
 import argparse
 import json
-import os
 import sys
 from pathlib import Path
 
-import requests
 import geopandas as gpd
-from shapely.geometry import Point, Polygon, MultiPolygon, shape
+import requests
 from pyproj import Transformer
+from shapely.geometry import MultiPolygon, Point, Polygon
 
 # ─────────────────────────────────────────────
 # CONFIG
