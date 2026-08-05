@@ -77,10 +77,11 @@ include = [
 [tool.ruff]
 target-version = "py312"
 line-length = 100
-# Vendored, tool-deployed hook files — byte-faithful copies of a canonical source
-# (see .claude/hooks/gate.py's own header), not this project's source. Formatting
-# them would mark them MODIFIED and diverge the deployed copy from what was reviewed.
-extend-exclude = [".claude/hooks", ".cursor/hooks"]
+# Vendored, tool-deployed hook/skill files — byte-faithful copies of a canonical
+# source (see .claude/hooks/gate.py's own header), not this project's source.
+# Formatting them would mark them MODIFIED and diverge the deployed copy from
+# what was reviewed.
+extend-exclude = [".claude/hooks", ".cursor/hooks", ".claude/skills"]
 
 [tool.semantic_release]
 version_variables = [
