@@ -8,7 +8,7 @@
 [![uv](https://img.shields.io/badge/packaging-uv-9055ff.svg)](https://github.com/astral-sh/uv)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Parse and validate US addresses with Pydantic models, ZIP/state validation, pandas integration, and semantic-release powered CI.
+Parse and validate US addresses with Pydantic models, ZIP/state validation, pandas integration, and release-please powered CI.
 
 ## Highlights
 
@@ -122,8 +122,8 @@ for entry in result.aggregate_logs():
 flowchart LR
     parseStep[Parse] --> validateStep[Validate ZIP/State]
     validateStep --> testsStep[Tests & Lint]
-    testsStep --> releaseStep[uv version bump + tag]
-    releaseStep --> githubRelease[GitHub Release + Artifacts]
+    testsStep --> releaseStep[release-please PR merged]
+    releaseStep --> githubRelease[Tag + GitHub Release]
 ```
 
 ## APIs you get
