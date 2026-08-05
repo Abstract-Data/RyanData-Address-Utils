@@ -19,15 +19,20 @@ Backstop for `agent-config-versioning-gate.sh`. That Stop hook blocks session cl
 - `AGENTS.md`, `GUARDRAILS.md`, `TESTING.md`, `ARCHITECTURE.md` each have a version header near the top (check `docs/` for the latter three if not at repo root).
 - `plans/` has no loose `.md` files directly in its root — every plan lives in `plans/{NNNN}-{slug}/`.
 - Every `.cursor/rules/*.mdc` referenced by AGENTS.md actually exists.
+- `REVIEWERS.md` is regenerated/updated when `.claude/agents/` changes.
+- `REVIEWERS.md`'s reviewer map matches the actual available agents.
+- The roster counts in `REVIEWERS.md` are accurate (six review/audit-capable agents: agent-config-conformance-auditor, code-reviewer, python-design-principles-gate, reviewer, security-auditor, task-critic; four support agents: test-writer, doc-writer, session-closer, researcher).
 
 ## Process
 
 1. Run `git diff --name-only HEAD` to confirm what actually changed this session — don't just re-check everything from scratch if scope is narrower.
 2. Walk the checklist above against the current state of the repo (not just the diff — a stale file elsewhere still fails the audit).
-3. If everything passes, write `.claude/agent-config-audit-receipt.json`:
+3. If everything passes, obtain the current Unix timestamp via `date +%s` and validate the full receipt JSON structure before writing `.claude/agent-config-audit-receipt.json`:
+
    ```json
-   {"passed_at_unix": <current unix timestamp>, "checked": ["skills", "agents", "cursor-rules", "docs-versions", "plans-root"]}
+   {"passed_at_unix": <current unix timestamp from date +%s>, "checked": ["skills", "agents", "cursor-rules", "docs-versions", "plans-root"]}
    ```
+
 4. If something fails, report the specific gap (file + what's missing) instead of writing the receipt. Do not write a receipt for a failed audit.
 
 ## Will not

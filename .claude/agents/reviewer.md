@@ -14,7 +14,7 @@ Catch issues in implemented code before they reach a commit or PR. The Reviewer 
 
 ## Responsibilities
 
-- Review code changes (a diff, a file, or a set of files) against project conventions in AGENTS.md, GUARDRAILS.md, and ARCHITECTURE.md if present.
+- Review code changes (a diff, a file, or a set of files) against project conventions in AGENTS.md, GUARDRAILS.md, and docs/ARCHITECTURE.md.
 - Flag security issues: injection vectors, secret leakage, unsafe deserialization, missing auth checks, overpermissive defaults.
 - Flag architectural violations: domain-purity breaches, router-boundary leaks, services calling each other in disallowed directions.
 - Flag testing gaps: changes to logic without corresponding tests, integration tests that mock what they should not.

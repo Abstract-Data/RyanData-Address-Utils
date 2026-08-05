@@ -3,10 +3,10 @@
 Index mapping touched-file patterns to the review-capable subagent that covers them. Regenerate
 this file when `.claude/agents/` changes — don't hand-edit it out of sync with the real roster.
 
-**Roster arithmetic:** 10 subagents total in `.claude/agents/` this repo. Of those, 5 are
-review/audit-capable (listed in Installed below); the remaining 5 (`doc-writer`, `researcher`,
-`session-closer`, `test-writer`, `python-design-principles-gate`'s companion tooling aside) are
-authoring/support roles, not reviewers, so they're intentionally absent from the mapping table.
+**Roster arithmetic:** 10 subagents total in `.claude/agents/` this repo. Of those, 6 are
+review/audit-capable (listed in Installed below); the remaining 4 (`doc-writer`, `researcher`,
+`session-closer`, `test-writer`) are authoring/support roles, not reviewers, so they're
+intentionally absent from the mapping table.
 This project has no Notion-sourced canonical reviewer roster to diff against (no abstract-data
 coupling by design — see `docs/adr/0001-initial-tool-selection.md`), so "Not installed" below
 lists roles a *generic* Python-package project commonly has but this one doesn't need, not gaps
