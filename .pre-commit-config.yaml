@@ -21,7 +21,14 @@ repos:
     hooks:
       - id: pytest-unit
         name: pytest
-        entry: uv run pytest
+        entry: uv run pytest --cov=src/ryandata_address_utils --cov-report=xml:coverage.xml
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: diff-coverage
+        name: diff coverage (new/changed lines must be tested)
+        entry: scripts/check-diff-coverage.sh
         language: system
         pass_filenames: false
         always_run: true

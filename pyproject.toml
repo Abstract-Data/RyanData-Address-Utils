@@ -54,6 +54,7 @@ dev = [
     "pre-commit>=4.0.0",
     "ty>=0.0.66",
     "pandas>=2.3.3",
+    "diff-cover>=10.4.1",
 ]
 
 [build-system]

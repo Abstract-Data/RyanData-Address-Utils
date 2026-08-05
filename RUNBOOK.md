@@ -7,8 +7,26 @@
 git clone <repo>
 cd RyanData-Address-Utils
 uv sync
-uv run pytest          # verify install
+uv run pre-commit install   # wire up local git hooks — see Pre-commit Hooks below
+uv run pytest                # verify install
 ```
+
+## Pre-commit Hooks
+
+`.pre-commit-config.yaml` defines the hooks, but **`pre-commit install` must be run once per
+clone** — the config file alone doesn't wire anything into git. `git commit` then runs, in order:
+
+- `trailing-whitespace`, `end-of-file-fixer`, `check-yaml`, `check-added-large-files`,
+  `check-merge-conflict`, `debug-statements` (standard pre-commit-hooks)
+- `ruff` (lint, `--fix`) and `ruff-format`
+- `pytest` — full suite, with `--cov` (writes `coverage.xml`)
+- `diff-coverage` (`scripts/check-diff-coverage.sh`) — fails the commit if the lines you
+  actually added/changed fall below 80% coverage, using `diff-cover` against the merge-base
+  with the trunk branch. This is a **local, blocking** version of what `codecov.yml`'s `patch`
+  check does on GitHub — it catches uncovered new code before it ever leaves your machine,
+  instead of just flagging it after the fact in a PR.
+
+To run everything without committing: `uv run pre-commit run --all-files`.
 
 ## Common Operations
 
