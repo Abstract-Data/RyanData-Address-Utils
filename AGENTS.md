@@ -1,8 +1,17 @@
 # AGENTS.md - AI Coding Assistant Guide
 
+Version: 1.0.0
+
 This document provides context for AI coding assistants (Claude, GPT, Copilot, Cursor, etc.) working with the `ryandata-address-utils` codebase.
 
 ---
+
+## Documentation Priority
+
+1. **Context7 MCP** — before assuming how a third-party library (Pydantic, usaddress, pandas, Typer) behaves, resolve it via Context7 (`resolve-library-id` then `get-library-docs`) rather than relying on training-data memory. Library APIs change between versions; this codebase pins specific versions (see Key Dependencies below).
+2. **This file (AGENTS.md)** — project-specific conventions, architecture patterns, and commands.
+3. **`docs/ARCHITECTURE.md`** — data flow, SOLID/DRY rationale, full package structure.
+4. **Source code** — when docs and code disagree, the code is correct; flag the doc as stale rather than trusting it blindly.
 
 ## Codebase Overview
 
@@ -171,6 +180,27 @@ See `docs/ARCHITECTURE.md` for:
 - SOLID principles applied
 - DRY improvements made
 - Full package structure
+
+---
+
+## Tool Permissions by Mode
+
+| Agent role | May use | Should not use |
+|---|---|---|
+| Implementer (main agent) | Read, Edit, Write, Grep, Glob, Bash (uv/ruff/ty/pytest) | Force-push, `rm -rf`, global git config — blocked by `.claude/hooks/gate.py` regardless |
+| `code-reviewer` (`.claude/agents/code-reviewer.md`) | Read, Grep, Glob, `git diff`/`git log`, ruff/ty (read-only) | Edit, Write — findings only, never fixes its own findings |
+| `security-auditor` | Read, Grep, Glob, `pip-audit` | Edit, Write — findings only |
+| `test-writer` | Read, Edit, Write (tests only), Grep, Glob, Bash | Editing `src/` to make a test pass |
+| `researcher` | Read, Grep, Glob, WebSearch, WebFetch | Edit, Write |
+| `session-closer` | Read, Write (HANDOFF.md and `.claude/handoffs/` only) | Editing source or tests |
+
+## Anti-Pattern Warnings
+
+- **Do not hallucinate library APIs.** Resolve via Context7 first (see Documentation Priority) — this project pins exact versions of `pydantic`, `usaddress`, and `typer`, and API shape varies by version.
+- **Do not mock the database/data source in integration tests.** `test-writer` follows the mock/real divide: unit tests are pure, integration tests hit the real `DataSourceFactory`-backed source.
+- **Do not bypass the `ProcessLog` convention** by mutating fields directly instead of calling `add_cleaning_process` — this silently breaks transformation tracking.
+- **Do not introduce a new architecture pattern** (a second Facade, a parallel Factory) without explicit approval — extend the existing Facade/Protocol/Factory/Composite/Builder set.
+- **Do not add a dependency** without checking `pyproject.toml` first — several capabilities (data validation, process tracking) already have a designated owner class.
 
 ---
 

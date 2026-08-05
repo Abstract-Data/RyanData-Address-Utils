@@ -1,0 +1,18 @@
+---
+alwaysApply: true
+---
+
+# Project Standards
+
+This project's full AI-assistant guidance lives in `AGENTS.md` at the repo root — read it before
+making changes. `CLAUDE.md` is a symlink to the same file.
+
+Key points (see AGENTS.md for full detail):
+- Architecture: Facade (`AddressService`), Protocol-based interfaces, Factory (`ParserFactory`,
+  `DataSourceFactory`), Composite (`CompositeValidator`), Builder (`AddressBuilder`).
+- Do not redesign architecture without explicit approval.
+- Use Context7 to resolve third-party library APIs (Pydantic, usaddress, pandas, Typer) rather
+  than relying on memory — this project pins specific versions.
+- Run `uv run pytest`, `uv run ruff check`, `uv run mypy src` before considering a change done.
+
+See also `01-python.mdc` and `02-tests.mdc` for language- and test-specific rules.

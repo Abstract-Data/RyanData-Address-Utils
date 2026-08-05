@@ -1,0 +1,16 @@
+---
+globs: "tests/**/*.py"
+---
+
+# Test Conventions
+
+- **Framework:** pytest + pytest-cov. Target 80%+ coverage.
+- **Location:** all tests under `tests/`, mirroring the source layout being tested.
+- **Run:** `uv run pytest` (all), `uv run pytest --cov=src` (with coverage),
+  `uv run pytest -k "test_parse"` (targeted).
+- Every test needs at least one assertion that would actually fail if the code under test broke —
+  no assertion-free smoke tests.
+- Do not mock the component under test. If a test needs the real `DataSourceFactory`-backed data
+  source to be meaningful, use it — don't fake the thing you're trying to verify.
+- Do not silence a failing test with `@pytest.mark.skip`; either fix it or flag the bug it's
+  revealing.
