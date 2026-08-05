@@ -48,7 +48,7 @@ python src/pisd_shape/pfisd_extract_shapefiles.py                  # fetch from 
 python src/pisd_shape/pfisd_extract_shapefiles.py --local data.json  # load from local JSON
 uv run ruff check src/pisd_shape/                                   # lint
 uv run ruff format src/pisd_shape/                                  # format
-uv run mypy src/pisd_shape/                                         # type check
+uv run ty check src/pisd_shape/                                     # type check
 uv run pytest tests/ -k pisd                                        # run pisd-specific tests
 ```
 
@@ -144,7 +144,10 @@ via `python` or add one under `[project.scripts]` if a CLI entrypoint is needed.
 - **Python version:** 3.12+ (matches `pyproject.toml` `requires-python`)
 - **Line length:** 100 characters (matches `[tool.ruff]` config)
 - **Formatter/linter:** `ruff format` + `ruff check` with `E, F, I, UP, B, SIM` rules
-- **Type checker:** `mypy` — `disallow_untyped_defs = true`, `ignore_missing_imports = true`
+- **Type checker:** `ty` (repo-wide `[tool.ty.environment]` in pyproject.toml). GIS deps
+  (`geopandas`, `pyproj`, `shapely`) aren't a dev dependency — heavy, unrelated to the main
+  package, and this module isn't part of the built wheel — so their imports carry a per-line
+  `# ty: ignore[unresolved-import]` rather than a blanket ignore-missing-imports setting.
 - **Function names:** `snake_case`
 - **Class names:** `PascalCase` (none currently exist in this module)
 - **Type hints:** required on all function signatures
@@ -272,7 +275,7 @@ def test_extract_layer_returns_none_for_empty_features():
   - `chore(pisd): add geopandas to optional pisd extras in pyproject.toml`
 - **Push target:** `origin/claude/continue-work-uO5cO`
 - **PR target:** `main`
-- **CI checks that must pass:** `ruff check`, `ruff format --check`, `mypy src/`, `pytest`
+- **CI checks that must pass:** `ruff check`, `ruff format --check`, `ty check src/`, `pytest`
 
 ---
 
@@ -294,7 +297,8 @@ Before marking any change complete:
 
 - [ ] `uv run ruff check src/pisd_shape/` passes with no errors
 - [ ] `uv run ruff format src/pisd_shape/` produces no diff
-- [ ] `uv run mypy src/pisd_shape/` reports no errors
+- [ ] `uv run ty check src/pisd_shape/` reports no errors (GIS-import diagnostics are
+      expected to be suppressed via `# ty: ignore[unresolved-import]`, not silent)
 - [ ] `uv run pytest tests/ -k pisd` passes (or skipped if no tests exist yet)
 - [ ] Geometry output projection is WGS84 (EPSG:4326) — verify with `gdf.crs`
 - [ ] `safe_filename()` truncates to ≤60 characters and replaces unsafe chars
@@ -324,7 +328,7 @@ When looking up APIs or documentation:
 - Truncate GeoDataFrame column names to 10 characters before `gdf.to_file()`
 - Skip `None` or empty geometries with a `[WARN]` log rather than raising an exception
 - Use `OUTPUT_DIR.mkdir(parents=True, exist_ok=True)` before writing
-- Run `ruff check` and `mypy` before committing
+- Run `ruff check` and `ty check` before committing
 
 ### ASK FIRST
 - Adding new CLI flags to `argparse` beyond `--local`

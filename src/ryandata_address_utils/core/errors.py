@@ -19,6 +19,24 @@ class RyanDataError(PydanticCustomError):
         context: Additional context dict merged into error context.
     """
 
+    def __new__(
+        cls,
+        package_name: str,
+        error_type: str,
+        message_template: str,
+        context: dict | None = None,
+    ) -> RyanDataError:
+        # PydanticCustomError is a Rust (pyo3) class — construction happens in __new__,
+        # which runs BEFORE __init__ and receives the same raw args. Without this
+        # override, __new__ inherits PydanticCustomError's own signature (error_type,
+        # message_template, context) and misinterprets package_name as error_type,
+        # crashing on any real call — this class was never actually constructible.
+        ctx = {"package": package_name, **(context or {})}
+        # pydantic_core's stub requires LiteralString for error_type/message_template,
+        # but this wrapper's entire purpose is accepting dynamic, runtime-determined
+        # values — that's not achievable while keeping the API flexible.
+        return super().__new__(cls, error_type, message_template, ctx)
+
     def __init__(
         self,
         package_name: str,
@@ -27,7 +45,7 @@ class RyanDataError(PydanticCustomError):
         context: dict | None = None,
     ):
         ctx = {"package": package_name, **(context or {})}
-        super().__init__(error_type, message_template, ctx)
+        super().__init__(error_type, message_template, ctx)  # ty: ignore[invalid-argument-type]
 
     @classmethod
     def from_pydantic_error(cls, package_name: str, error: PydanticCustomError) -> RyanDataError:

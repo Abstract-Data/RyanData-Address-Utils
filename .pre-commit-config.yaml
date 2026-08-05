@@ -9,10 +9,37 @@ repos:
       - id: check-merge-conflict
       - id: debug-statements
 
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.0
+  - repo: local
     hooks:
+      # `uv run ruff`, not the astral-sh/ruff-pre-commit mirror: that repo pins its own
+      # ruff version independently of pyproject.toml's `ruff` dev dependency, so it
+      # silently drifts from what CI's lint.yml actually runs (`uv run ruff` too) —
+      # exactly the mismatch that let a formatting issue pass locally and fail in CI.
+      # Routing both through the same uv-managed ruff makes that structurally impossible.
       - id: ruff
-        args: [--fix, src/, tests/]
+        name: ruff check
+        entry: uv run ruff check --fix src/ tests/
+        language: system
+        pass_filenames: false
+        always_run: true
+
       - id: ruff-format
-        args: [src/, tests/]
+        name: ruff format
+        entry: uv run ruff format src/ tests/
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: pytest-unit
+        name: pytest
+        entry: uv run pytest --cov=src/ryandata_address_utils --cov-report=xml:coverage.xml
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: diff-coverage
+        name: diff coverage (new/changed lines must be tested)
+        entry: scripts/check-diff-coverage.sh
+        language: system
+        pass_filenames: false
+        always_run: true

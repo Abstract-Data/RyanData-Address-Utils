@@ -1,0 +1,152 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push --force-with-lease:*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/surface-handoff.sh ] && bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/surface-handoff.sh",
+            "statusMessage": "surfacing prior handoff"
+          },
+          {
+            "type": "command",
+            "command": "if [ -f \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-py-baseline.sh\" ]; then bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-py-baseline.sh\"; fi"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/gate.py pretool",
+            "statusMessage": "checking dangerous-ops gate"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/gate.py pretool",
+            "statusMessage": "checking protected-path gate"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f \"$CLAUDE_PROJECT_DIR/.claude/hooks/protect-sensitive-files.sh\" ]; then bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/protect-sensitive-files.sh\"; fi"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/verify-commit.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/verify-submit.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f \"$CLAUDE_PROJECT_DIR/.claude/hooks/secret-scan.sh\" ]; then bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/secret-scan.sh\"; fi"
+          },
+          {
+            "type": "command",
+            "command": "if [ -f \"$CLAUDE_PROJECT_DIR/.claude/hooks/large-file-warning.sh\" ]; then bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/large-file-warning.sh\"; fi"
+          },
+          {
+            "type": "command",
+            "command": "if [ -f \"$CLAUDE_PROJECT_DIR/.claude/hooks/no-print-check.sh\" ]; then bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/no-print-check.sh\"; fi"
+          },
+          {
+            "type": "command",
+            "command": "if [ -f \"$CLAUDE_PROJECT_DIR/.claude/hooks/mutable-default-arg-check.sh\" ]; then bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/mutable-default-arg-check.sh\"; fi"
+          },
+          {
+            "type": "command",
+            "command": "if [ -f \"$CLAUDE_PROJECT_DIR/.claude/hooks/missing-pytest-marker.sh\" ]; then bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/missing-pytest-marker.sh\"; fi"
+          },
+          {
+            "type": "command",
+            "command": "if [ -f \"$CLAUDE_PROJECT_DIR/.claude/hooks/ruff-and-ty-check.sh\" ]; then bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/ruff-and-ty-check.sh\"; fi"
+          },
+          {
+            "type": "command",
+            "command": "if [ -f \"$CLAUDE_PROJECT_DIR/.claude/hooks/requests-import-check.sh\" ]; then bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/requests-import-check.sh\"; fi"
+          },
+          {
+            "type": "command",
+            "command": "if [ -f \"$CLAUDE_PROJECT_DIR/.claude/hooks/sql-injection-check.sh\" ]; then bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/sql-injection-check.sh\"; fi"
+          },
+          {
+            "type": "command",
+            "command": "if [ -f \"$CLAUDE_PROJECT_DIR/.claude/hooks/naive-datetime-check.sh\" ]; then bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/naive-datetime-check.sh\"; fi"
+          },
+          {
+            "type": "command",
+            "command": "if [ -f \"$CLAUDE_PROJECT_DIR/.claude/hooks/tomli-import-check.sh\" ]; then bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/tomli-import-check.sh\"; fi"
+          },
+          {
+            "type": "command",
+            "command": "if [ -f \"$CLAUDE_PROJECT_DIR/.claude/hooks/real-http-in-tests.sh\" ]; then bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/real-http-in-tests.sh\"; fi"
+          },
+          {
+            "type": "command",
+            "command": "if [ -f \"$CLAUDE_PROJECT_DIR/.claude/hooks/changed-file-test.sh\" ]; then bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/changed-file-test.sh\"; fi",
+            "timeout": 120,
+            "statusMessage": "running the changed file's tests"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f \"$CLAUDE_PROJECT_DIR/.claude/hooks/verify-completion.sh\" ]; then bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/verify-completion.sh\"; fi"
+          },
+          {
+            "type": "command",
+            "command": "if [ -f \"$CLAUDE_PROJECT_DIR/.claude/hooks/agent-config-versioning-gate.sh\" ]; then bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/agent-config-versioning-gate.sh\"; fi",
+            "statusMessage": "checking agent-config versioning gate"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/gate.py stop-check",
+            "statusMessage": "loop-closure gate"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": []
+  }
+}

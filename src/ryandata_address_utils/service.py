@@ -26,10 +26,15 @@ from ryandata_address_utils.validation.validators import (
     validate_zip5,
 )
 
-# Optional libpostal import for international parsing
+# Optional libpostal import for international parsing. libpostal is a system C
+# library + downloaded data files (see ryandata-address-utils-setup) — it can't be
+# a pip dev-dependency, so this stays genuinely unresolvable in a plain `uv sync`.
+# Coverage note: the second import is unreachable without libpostal installed (the
+# first import already raises ImportError) — not pragma'd, since combining a pragma
+# with the ty:ignore comment below is fragile under ruff's import-block reformatting.
 try:
-    from postal.expand import expand_address as lp_expand_address
-    from postal.parser import parse_address as lp_parse_address
+    from postal.expand import expand_address as lp_expand_address  # ty: ignore[unresolved-import]
+    from postal.parser import parse_address as lp_parse_address  # ty: ignore[unresolved-import]
 except ImportError:
     lp_parse_address = None
     lp_expand_address = None
@@ -358,8 +363,6 @@ class AddressService:
         if not result.is_valid:
             if errors == "raise":
                 if result.error:
-                    from ryandata_address_utils.models import RyanDataAddressError
-
                     # Ensure it is a RyanDataAddressError, even if it was just passed through
                     if not isinstance(result.error, RyanDataAddressError):
                         raise RyanDataAddressError.from_validation_error(result.error)
@@ -368,9 +371,10 @@ class AddressService:
                     # Re-raise the first validation error if it's a PydanticCustomError
                     # This is already raised in parse() via validate_external_results()
                     error_msgs = [e.message for e in result.validation.errors]
+                    msg = f"Validation failed: {'; '.join(error_msgs)}"
                     raise RyanDataAddressError(
                         "validation_error",
-                        f"Validation failed: {'; '.join(error_msgs)}",
+                        msg,  # ty: ignore[invalid-argument-type]
                         {"package": PACKAGE_NAME},
                     )
             return {f: None for f in ADDRESS_FIELDS}

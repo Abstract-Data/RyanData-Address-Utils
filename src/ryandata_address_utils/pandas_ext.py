@@ -59,6 +59,12 @@ class AddressParserAccessor:
         """
         import pandas as pd
 
+        # Series.apply() returns a bare Series (not a DataFrame) on an empty input,
+        # since pandas can't infer columns from zero rows — return the correctly-shaped
+        # empty DataFrame explicitly rather than let that edge case leak out.
+        if self._obj.empty:
+            return pd.DataFrame(columns=pd.Index(ADDRESS_FIELDS))
+
         svc = service or self._get_service()
 
         parsed_data = self._obj.apply(
@@ -67,7 +73,7 @@ class AddressParserAccessor:
             else pd.Series({field: None for field in ADDRESS_FIELDS})
         )
 
-        return parsed_data
+        return pd.DataFrame(parsed_data)
 
 
 def register_accessor(name: str = "addr") -> None:
@@ -177,6 +183,12 @@ def parse_address_series(
 
     from ryandata_address_utils.service import get_default_service
 
+    # Series.apply() returns a bare Series (not a DataFrame) on an empty input,
+    # since pandas can't infer columns from zero rows — return the correctly-shaped
+    # empty DataFrame explicitly rather than let that edge case leak out.
+    if series.empty:
+        return pd.DataFrame(columns=pd.Index(ADDRESS_FIELDS))
+
     service = get_default_service()
 
     parsed_data = series.apply(
@@ -185,4 +197,4 @@ def parse_address_series(
         else pd.Series({field: None for field in ADDRESS_FIELDS})
     )
 
-    return parsed_data
+    return pd.DataFrame(parsed_data)

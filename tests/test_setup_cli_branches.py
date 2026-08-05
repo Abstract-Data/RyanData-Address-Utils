@@ -39,7 +39,7 @@ def test_check_libpostal_success(monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     def parse_address(addr: str):
         return [("10", "house_number")]
 
-    parser_mod.parse_address = parse_address  # type: ignore[attr-defined]
+    parser_mod.parse_address = parse_address  # ty: ignore[unresolved-attribute]
     postal_mod = ModuleType("postal")
     monkeypatch.setitem(setup_cli.sys.modules, "postal", postal_mod)
     monkeypatch.setitem(setup_cli.sys.modules, "postal.parser", parser_mod)
@@ -54,7 +54,7 @@ def test_check_libpostal_failure(monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     def parse_address(addr: str):
         raise RuntimeError("missing data")  # force failure path
 
-    parser_mod.parse_address = parse_address  # type: ignore[attr-defined]
+    parser_mod.parse_address = parse_address  # ty: ignore[unresolved-attribute]
     postal_mod = ModuleType("postal")
     monkeypatch.setitem(setup_cli.sys.modules, "postal", postal_mod)
     monkeypatch.setitem(setup_cli.sys.modules, "postal.parser", parser_mod)

@@ -51,9 +51,11 @@ class RyanDataAddressError(PydanticCustomError):
         Returns:
             RyanDataAddressError instance with same type, message, and context.
         """
+        # pydantic_core's stub requires LiteralString for type/message_template; this
+        # wrapper exists specifically to carry dynamic, runtime-determined values.
         return cls(
-            error.type,
-            error.message_template,
+            error.type,  # ty: ignore[invalid-argument-type]
+            error.message_template,  # ty: ignore[invalid-argument-type]
             error.context,
         )
 
@@ -82,8 +84,8 @@ class RyanDataAddressError(PydanticCustomError):
                         **(err_dict.get("ctx", {})),
                     }
                     return cls(
-                        err_dict.get("type", "validation_error"),
-                        err_dict.get("msg", str(error)),
+                        err_dict.get("type", "validation_error"),  # ty: ignore[invalid-argument-type]
+                        err_dict.get("msg", str(error)),  # ty: ignore[invalid-argument-type]
                         ctx,
                     )
 
@@ -95,7 +97,7 @@ class RyanDataAddressError(PydanticCustomError):
             }
             return cls(
                 "validation_error",
-                error_messages,
+                error_messages,  # ty: ignore[invalid-argument-type]
                 ctx,
             )
         else:
@@ -106,7 +108,7 @@ class RyanDataAddressError(PydanticCustomError):
             }
             return cls(
                 "validation_error",
-                str(error),
+                str(error),  # ty: ignore[invalid-argument-type]
                 ctx,
             )
 

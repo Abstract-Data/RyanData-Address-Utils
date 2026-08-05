@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "./.cursor/hooks/surface-handoff.sh"
+      },
+      {
+        "command": "./.cursor/hooks/session-py-baseline.sh"
+      }
+    ],
+    "preToolUse": [
+      {
+        "command": "./.cursor/hooks/protect-sensitive-files.sh",
+        "matcher": "Write"
+      },
+      {
+        "command": "python3 ./.cursor/hooks/gate.py pretool",
+        "matcher": "Shell|Write|MultiEdit"
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": "./.cursor/hooks/verify-commit.sh",
+        "matcher": "Shell"
+      },
+      {
+        "command": "./.cursor/hooks/verify-submit.sh",
+        "matcher": "Shell"
+      },
+      {
+        "command": "./.cursor/hooks/secret-scan.sh",
+        "matcher": "Write"
+      },
+      {
+        "command": "./.cursor/hooks/large-file-warning.sh",
+        "matcher": "Write"
+      },
+      {
+        "command": "./.cursor/hooks/no-print-check.sh",
+        "matcher": "Write"
+      },
+      {
+        "command": "./.cursor/hooks/mutable-default-arg-check.sh",
+        "matcher": "Write"
+      },
+      {
+        "command": "./.cursor/hooks/missing-pytest-marker.sh",
+        "matcher": "Write"
+      },
+      {
+        "command": "./.cursor/hooks/ruff-and-ty-check.sh",
+        "matcher": "Write"
+      },
+      {
+        "command": "./.cursor/hooks/requests-import-check.sh",
+        "matcher": "Write"
+      },
+      {
+        "command": "./.cursor/hooks/sql-injection-check.sh",
+        "matcher": "Write"
+      },
+      {
+        "command": "./.cursor/hooks/naive-datetime-check.sh",
+        "matcher": "Write"
+      },
+      {
+        "command": "./.cursor/hooks/tomli-import-check.sh",
+        "matcher": "Write"
+      },
+      {
+        "command": "./.cursor/hooks/real-http-in-tests.sh",
+        "matcher": "Write"
+      },
+      {
+        "command": "./.cursor/hooks/changed-file-test.sh",
+        "matcher": "Write"
+      }
+    ],
+    "stop": [
+      {
+        "command": "./.cursor/hooks/verify-completion.sh"
+      }
+    ]
+  }
+}

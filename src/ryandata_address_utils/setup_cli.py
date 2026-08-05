@@ -189,7 +189,9 @@ def check_libpostal(data_dir: Path) -> tuple[bool, str | None]:
     try:
         if data_dir:
             os.environ.setdefault("LIBPOSTAL_DATA_DIR", str(data_dir))
-        from postal.parser import parse_address
+        # libpostal is a system C library + downloaded data files, not a pip
+        # dev-dependency — genuinely unresolvable in a plain `uv sync` env.
+        from postal.parser import parse_address  # ty: ignore[unresolved-import]
 
         parse_address("10 Downing St, London")
         return True, None
@@ -200,7 +202,7 @@ def check_libpostal(data_dir: Path) -> tuple[bool, str | None]:
 def ensure_postal_binding(*, dry_run: bool = False) -> None:
     """Ensure the Python bindings are installed; if missing, guide installation."""
     try:
-        import postal  # noqa: F401
+        import postal  # noqa: F401  # ty: ignore[unresolved-import]
 
         return
     except ImportError:

@@ -179,8 +179,13 @@ class ZipCodeNormalizer:
                     error=zip4_error,
                 )
 
+        # validate_zip5 returns (value, None) on success and (None, error) on failure;
+        # the early-return above already proved zip5_error is falsy, so validated_zip5
+        # must be set — assert makes that invariant explicit and checkable.
+        assert validated_zip5 is not None
+
         # Build full ZIP
-        full = self.normalize(validated_zip5, validated_zip4)  # type: ignore[arg-type]
+        full = self.normalize(validated_zip5, validated_zip4)
 
         return ZipCodeResult(
             zip5=validated_zip5,
@@ -255,8 +260,13 @@ class ZipCodeNormalizer:
             validated_zip4, zip4_error = self.validate_zip4(zip4)
             # Don't fail if zip4 is invalid, just set it to None
 
+        # validate_zip5 returns (value, None) on success and (None, error) on failure;
+        # the early-return above already proved zip5_error is falsy, so validated_zip5
+        # must be set — assert makes that invariant explicit and checkable.
+        assert validated_zip5 is not None
+
         # Build full ZIP
-        full = self.normalize(validated_zip5, validated_zip4)  # type: ignore[arg-type]
+        full = self.normalize(validated_zip5, validated_zip4)
 
         return ZipCodeResult(
             zip5=validated_zip5,

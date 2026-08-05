@@ -133,7 +133,7 @@ class AddressBuilder:
         if field_name not in ADDRESS_FIELDS:
             raise RyanDataAddressError(
                 "address_builder",
-                f"Unknown address field: {field_name}",
+                f"Unknown address field: {field_name}",  # ty: ignore[invalid-argument-type]
                 {"package": PACKAGE_NAME, "field": field_name},
             )
         self._data[field_name] = value

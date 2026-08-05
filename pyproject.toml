@@ -1,6 +1,6 @@
 [project]
 name = "ryandata-address-utils"
-version = "0.7.2"
+version = "0.7.2"  # x-release-please-version
 description = "A Python address parser using usaddress with Pydantic models, validation, and extensible architecture"
 readme = "README.md"
 license = { text = "MIT" }
@@ -47,13 +47,14 @@ Issues = "https://github.com/Abstract-Data/RyanData-Address-Utils/issues"
 [dependency-groups]
 dev = [
     "ruff>=0.8.0",
-    "mypy>=1.13.0",
     "pytest>=8.0.0",
     "pytest-cov>=5.0.0",
     "hypothesis>=6.0.0",
-    "python-semantic-release>=9.0.0",
     "codecov>=2.1.13",
     "pre-commit>=4.0.0",
+    "ty>=0.0.66",
+    "pandas>=2.3.3",
+    "diff-cover>=10.4.1",
 ]
 
 [build-system]
@@ -76,26 +77,15 @@ include = [
 [tool.ruff]
 target-version = "py312"
 line-length = 100
-
-[tool.semantic_release]
-version_variables = [
-    "pyproject.toml:version",
-    "src/ryandata_address_utils/__init__.py:__version__",
-]
+# Vendored, tool-deployed hook/skill files — byte-faithful copies of a canonical
+# source (see .claude/hooks/gate.py's own header), not this project's source.
+# Formatting them would mark them MODIFIED and diverge the deployed copy from
+# what was reviewed.
+extend-exclude = [".claude/hooks", ".cursor/hooks", ".claude/skills"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
 
-[tool.mypy]
+[tool.ty.environment]
 # Package requires Python 3.12+ due to abstract-validation-base dependency
-python_version = "3.12"
-warn_return_any = true
-warn_unused_ignores = true
-disallow_untyped_defs = true
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "tests.*"
-disallow_untyped_defs = false
-check_untyped_defs = true
-warn_return_any = false
+python-version = "3.12"

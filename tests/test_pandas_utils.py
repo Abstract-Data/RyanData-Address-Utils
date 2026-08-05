@@ -209,6 +209,31 @@ class TestParseAddressSeries:
 
         assert result.index[0] == "custom_index"
 
+    def test_empty_series_returns_empty_dataframe(self) -> None:
+        """An empty Series must still return a DataFrame with the address columns.
+
+        pandas.Series.apply() returns a bare Series (not a DataFrame) when the
+        input is empty, since it can't infer columns from zero rows — this
+        exercises the explicit empty-input guard that works around that.
+        """
+        result = parse_address_series(pd.Series([], dtype=object))
+
+        assert isinstance(result, pd.DataFrame)
+        assert len(result) == 0
+        assert "AddressNumber" in result.columns
+        assert "ZipCode" in result.columns
+
+    def test_empty_series_accessor_returns_empty_dataframe(self) -> None:
+        """Same empty-input guard, exercised via the .addr.parse() accessor."""
+        from ryandata_address_utils.pandas_ext import register_accessor
+
+        register_accessor()
+        result = pd.Series([], dtype=object).addr.parse()
+
+        assert isinstance(result, pd.DataFrame)
+        assert len(result) == 0
+        assert "AddressNumber" in result.columns
+
 
 class TestAddressServicePandas:
     """Test AddressService pandas methods."""

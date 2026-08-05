@@ -19,14 +19,15 @@ Output:
 
 import argparse
 import json
-import os
 import sys
 from pathlib import Path
 
+# Heavy GIS deps for this standalone extraction script (not part of the distributed
+# package — excluded from [tool.hatch.build.targets.wheel]); not a core dev dependency.
+import geopandas as gpd  # ty: ignore[unresolved-import]
 import requests
-import geopandas as gpd
-from shapely.geometry import Point, Polygon, MultiPolygon, shape
-from pyproj import Transformer
+from pyproj import Transformer  # ty: ignore[unresolved-import]
+from shapely.geometry import MultiPolygon, Point, Polygon  # ty: ignore[unresolved-import]
 
 # ─────────────────────────────────────────────
 # CONFIG
@@ -46,6 +47,7 @@ transformer = Transformer.from_crs("EPSG:3857", "EPSG:4326", always_xy=True)
 # ─────────────────────────────────────────────
 # GEOMETRY HELPERS
 # ─────────────────────────────────────────────
+
 
 def reproject_ring(ring):
     """Convert a list of [x, y] Web Mercator coords to (lon, lat) WGS84."""
@@ -87,6 +89,7 @@ def esri_point_to_shapely(esri_geom):
 # ─────────────────────────────────────────────
 # LAYER EXTRACTION
 # ─────────────────────────────────────────────
+
 
 def extract_layer(layer_data, layer_title):
     """
@@ -141,6 +144,7 @@ def extract_layer(layer_data, layer_title):
 # MAIN
 # ─────────────────────────────────────────────
 
+
 def safe_filename(title):
     """Strip characters that are unsafe in filenames."""
     keep = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_- "
@@ -151,7 +155,8 @@ def safe_filename(title):
 def main():
     parser = argparse.ArgumentParser(description="Extract PFISD attendance boundary shapefiles")
     parser.add_argument(
-        "--local", "-l",
+        "--local",
+        "-l",
         type=str,
         default=None,
         help="Path to a local WebMap JSON file (skip HTTP fetch)",

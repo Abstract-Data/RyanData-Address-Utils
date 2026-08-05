@@ -12,9 +12,16 @@ wheels/
 # IDE
 .idea/
 .vscode/
-.cursor/
 *.swp
 *.swo
+
+# Cursor: ignore local/machine state, but ship the portable governance pieces
+.cursor/*
+!.cursor/agents.md
+!.cursor/plans/
+!.cursor/rules/
+!.cursor/hooks/
+!.cursor/hooks.json
 
 # OS
 .DS_Store
@@ -30,3 +37,8 @@ htmlcov/
 
 # Data cache
 .data/
+# No trailing slash: .claude/state is a symlink (verify-completion.sh relocates the
+# gate ledger outside the worktree), not a plain directory — a trailing-slash pattern
+# would not match it and this machine-specific symlink would get committed.
+.claude/state
+.claude/handoffs/

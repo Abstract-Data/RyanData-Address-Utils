@@ -1,5 +1,7 @@
 # RyanData Address Utils - Architecture Overview
 
+Version: 1.0.0
+
 This document explains the architecture of the `ryandata-address-utils` package after the SOLID/DRY refactoring.
 
 ## High-Level Architecture
