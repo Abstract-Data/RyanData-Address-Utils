@@ -24,10 +24,13 @@ git branch --show-current
 git status --short
 git log --oneline -5
 git diff --stat HEAD
+git ls-files --others --exclude-standard
 ```
 
 Collect: current branch, list of uncommitted files, last 5 commits,
-stat summary of current diff.
+stat summary of current diff, and list of untracked files. Include each
+untracked file's path (and relevant content) in the handoff summary and
+half-done-pattern scan.
 
 ## Step 2 — Read TASK.md (if present)
 
@@ -58,7 +61,9 @@ Be honest about In-Flight items — do not mark something Completed if
 it has failing tests, uncommitted changes, or half-done patterns.
 
 The Next Session section must have at minimum one concrete next action tied
-to the In-Flight items.
+to the In-Flight items when In-Flight items exist. When there are no In-Flight
+items, explicitly state "No in-flight items" instead of inventing a speculative
+next action.
 
 ## Step 5 — Confirm
 

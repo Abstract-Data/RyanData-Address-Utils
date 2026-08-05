@@ -14,8 +14,7 @@ You are a completion auditor for this project. Your job is NOT to review code qu
 2. Read HANDOFF.md or the most recent session summary for claims about what was accomplished.
 3. For each claimed item:
    - Grep or read the relevant files to confirm the implementation exists
-   - Check git diff to confirm it was changed in this session (not pre-existing)
-   - Verify it's wired in (imported, registered, called) not just defined
+   - Verify the implementation exists and is wired in (imported, registered, called) not just defined — use file reading/grepping, and when session provenance must be established, require an explicit base commit reference or session manifest rather than relying solely on git diff against working tree
 4. Check for the half-done pattern catalog:
    - Function defined but not called anywhere
    - Route added but not registered in the router
@@ -24,7 +23,7 @@ You are a completion auditor for this project. Your job is NOT to review code qu
    - Migration file created but `alembic upgrade head` never run
    - Middleware written but not registered in app startup
    - Env var documented but not added to actual .env or Settings
-   - Import added to __init__.py but nothing in the codebase imports from it
+   - Import added to __init__.py but nothing in the codebase imports from it (for PUBLIC exports in package __init__.py, verify the symbol resolves and is covered by tests or documentation, rather than requiring an in-repo caller; retain the in-repo-caller check for non-public/internal code)
    - Supabase RLS policy written in a comment or migration but never applied
 
 ## Output

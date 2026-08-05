@@ -49,4 +49,3 @@ if __name__ == "__main__":
     test_agents_md_has_required_sections()
     test_claude_md_symlinks_to_agents_md()
     test_no_dangling_notion_references()
-    print("check_agents_md: all checks passed")

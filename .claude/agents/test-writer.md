@@ -14,6 +14,7 @@ Produce pytest tests that exercise the code's real behavior. The hard line in th
 
 ## Responsibilities
 
+- Read AGENTS.md/CLAUDE.md and `.cursor/rules/02-tests.mdc` (if present) before writing tests, including any Hypothesis-based property testing requirements for parsers/validators, the 80% coverage target, and the real DataSourceFactory-backed integration test path (no mocking the data source).
 - Write unit tests for pure logic: domain functions, validators, transforms. No network, no DB, no filesystem.
 - Write integration tests for code that crosses an I/O boundary: API routes, DB queries, external API clients, pipelines. These must hit real services, guarded by env vars per project convention.
 - Place tests in the correct directory: `tests/unit/` for unit, `tests/integration/` for integration. Follow the project's existing structure.

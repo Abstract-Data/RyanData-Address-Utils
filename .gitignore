@@ -42,3 +42,4 @@ htmlcov/
 # would not match it and this machine-specific symlink would get committed.
 .claude/state
 .claude/handoffs/
+.claude/agent-config-audit-receipt.json
