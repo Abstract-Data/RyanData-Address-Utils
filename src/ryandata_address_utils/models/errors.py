@@ -84,9 +84,7 @@ class RyanDataAddressError(PydanticCustomError):
                         **(err_dict.get("ctx", {})),
                     }
                     return cls(
-                        err_dict.get(
-                            "type", "validation_error"
-                        ),  # ty: ignore[invalid-argument-type]
+                        err_dict.get("type", "validation_error"),  # ty: ignore[invalid-argument-type]
                         err_dict.get("msg", str(error)),  # ty: ignore[invalid-argument-type]
                         ctx,
                     )
