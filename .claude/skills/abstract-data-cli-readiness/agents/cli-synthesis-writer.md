@@ -40,9 +40,10 @@ someone chose to skip are not the same kind of loose end, and collapsing them lo
 distinction that makes either list useful to whoever implements this.]
 
 ## Open items deferred past this design cycle
-[Anything explicitly marked "deferred" in Phases 2-4, with the stated reason — a dry-run feature
-pushed to a later release, a machine-readable catalog deferred, etc. This section exists so
-deferred-but-intentional gaps don't get mistaken for oversights later.]
+[Anything explicitly marked "deferred" in Phases 1-4, with the stated reason — a TUI deferral
+permitted by Phase 1, a dry-run feature pushed to a later release, a machine-readable catalog
+deferred, etc. This section exists so deferred-but-intentional gaps don't get mistaken for
+oversights later.]
 ```
 
 ## `docs/cli/adr/ADR-CLI-001-surface-and-contract.md`
@@ -116,6 +117,6 @@ Return, in order:
 Don't add a critique pass to this phase — there's no new judgment call here to critique, only a
 transcription-accuracy check: re-read the four Phase 1–4 outputs (or Phase 0's ALIGNED items) and
 confirm nothing was dropped or altered in translation before returning. This includes every
-non-empty Open Questions field — an open question that quietly disappears between a phase's
-output and the design doc is worse than one that was never raised, since it now looks resolved
-when it isn't.
+non-empty Open Questions field and every explicitly deferred item from Phase 1 forward — an open
+question or deferred decision that quietly disappears between a phase's output and the design doc
+is worse than one that was never raised, since it now looks resolved when it isn't.

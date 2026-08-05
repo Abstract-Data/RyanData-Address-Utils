@@ -55,7 +55,7 @@ On an evergreen run, don't write a fresh copy of this template — the project a
 <!-- Every prohibition below needs a paired alternative — see spec-constitution-writer.md -->
 
 ## Definition of done
-- Python: `uv run pytest` + `uv run ruff check .` clean — if Python project
+- Python: `ruff format --check` + `ruff check` + `uv run ty check src` + `uv run pytest` with >= 80% coverage — if Python project
 - TypeScript: `bun run tsc` passes with zero errors — if TS project
 - All TASK.md items checked off
 - task-critic subagent returns PASS before declaring the task complete

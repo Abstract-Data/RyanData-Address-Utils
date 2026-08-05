@@ -45,9 +45,10 @@ Doing this properly — fixing root causes rather than blanket-suppressing — s
   subclass's more readable name is no longer part of the interface contract, so this is no longer
   a violation, and it required touching zero call sites since nobody was calling it by keyword.
 - **A real pandas edge case**: `Series.apply()` returns a bare `Series`, not a `DataFrame`, when
-  given an empty input (pandas can't infer columns from zero rows) — both public entry points
-  that promised a `DataFrame` return type would have silently returned the wrong type on empty
-  input. Fixed with an explicit empty-input guard; added regression tests for both.
+  given an empty input (pandas can't infer columns from zero rows). Both `AddressParserAccessor.parse`
+  and `parse_address_series` produced a DataFrame lacking the expected address columns on empty
+  input, rather than a properly-schemaed empty DataFrame. Fixed with an explicit empty-input guard
+  that returns an empty DataFrame with the correct column schema; added regression tests for both.
 - **A previously-untested feature area**: `pandas` wasn't installed anywhere in dev/CI, so
   `tests/test_pandas_utils.py` (23 tests) was entirely skipped and the pandas integration code
   had zero type-checking coverage. Added `pandas` as a dev dependency (kept optional for end

@@ -18,7 +18,7 @@ Parse and validate US addresses with Pydantic models, ZIP/state validation, pand
 - Custom errors (`RyanDataAddressError`, `RyanDataValidationError`) with package context
 - Builder API for programmatic address construction
 - ProcessLog system for transformation auditing (via `abstract-validation-base`)
-- Semantic-release CI for automated tagging and releases
+- release-please for automated tagging and releases
 
 ## Install
 

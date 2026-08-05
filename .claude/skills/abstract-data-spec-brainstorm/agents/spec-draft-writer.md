@@ -9,7 +9,7 @@ This is an evaluator-optimizer phase, same as 1–3, except there's no human gat
 
 ## EARS format (non-negotiable for every functional requirement)
 
-```
+```text
 WHEN [trigger condition]
 THE [system component]
 SHALL [required behavior]

@@ -22,7 +22,8 @@ excerpts, and any prior critic reports.
 **Cartographer is the one exception to the adversarial contract below:** it is strictly descriptive —
 no praise, no criticism, no severity — because its output is the neutral baseline the critics measure
 against. Its map (especially the claimed-vs-observed divergences) is fed into every critic as shared
-context.
+context in modes where Cartographer runs. In `quick` mode, critics have no Cartographer map available,
+as Cartographer is skipped for speed.
 
 ## Shared contract (every critic)
 
@@ -30,6 +31,9 @@ context.
 2. Evidence mandate — every finding quotes/points to real code; uncertain ones labeled
    "potential — requires manual verification".
 3. Uses the mandatory six-field finding structure and the canonical section list from SKILL.md.
+   **Exceptions:** RedTeamAttacker outputs a meta-review schema (Target finding / Attack / Hardened
+   version / Severity upgrade), and Synthesizer appends a machine-readable `RECEIPT_COUNTS` line
+   after its pre-mortem section — both differ from the six-field finding schema used by other critics.
 4. Grounds library-specific claims in Context7 excerpts when provided; otherwise flags them for
    manual verification.
 5. Ends after the pre-mortem section — no positive summary, no closing pleasantries.

@@ -64,7 +64,7 @@ Most real projects start as a vague intent, not a spec. Spec-Driven Development 
 
 ## The six phases
 
-```
+```text
 Phase 0  INTAKE        — orchestrator collects intent, constraints, timeline inline (no subagent)
 Phase 1  LANGUAGE       — agents/spec-language-selector.md    → gate  [skipped on an evergreen existing-project run]
 Phase 2  TOOLING         — agents/spec-tooling-selector.md     → gate  [skipped on an evergreen existing-project run]
@@ -100,7 +100,7 @@ Before dispatching anything, resolve where this run's output will live, then col
 
 ### Resolve the spec's output path (do this first)
 
-Every brainstorm cycle is scoped to a **spec name** — a short kebab-case slug (`user-auth-service`, `billing-webhooks`). Propose one from the project intent (or, on an evergreen run, the module/feature name) and confirm it with the human rather than asking cold.
+Every brainstorm cycle is scoped to a **spec name** — a short kebab-case slug (`user-auth-service`, `billing-webhooks`). Propose one from the project intent (or, on an evergreen run, the module/feature name) and confirm it with the human rather than asking cold. Before using the slug in any shell command or path, validate it matches kebab-case format (lowercase letters, digits, and hyphens only; no underscores, spaces, or special characters) to prevent shell injection.
 
 Check what's already on disk for that name:
 
@@ -119,11 +119,13 @@ Whatever this resolves to, every artifact any phase produces this run — `brain
 State the resolved path back to the human before moving on — e.g. "This run writes to `docs/spec/user-auth-service/v.2.0/`" — so there's no ambiguity about where output is landing.
 
 ### Collect in one pass (ask the human, don't guess)
+
 1. **Project intent** — one paragraph, free-form
 2. **Fixed constraints** — anything already locked (must use Postgres, must deploy on Railway, must use 1Password, etc.)
 3. **Timeline category** — spike/prototype (days), MVP (weeks), production (months) — this materially changes Phase 2's tooling depth
 4. **Greenfield or existing codebase?** — if existing, don't jump straight to `project-alignment`. Ask one more question first: **retrofit or evergreen?**
    - **Evergreen** means the project already runs the abstract-data pipeline and stays current on its own (a `.abstract-data/` directory exists — same detection `project-alignment` itself uses). Confirm rather than assume:
+
      ```bash
      test -d .abstract-data && abstract-data status --json
      ```
@@ -191,7 +193,7 @@ This skill never performs step 2 itself — it hands off at Phase 5, before SDD 
 - **Parallel phase execution** — Phases 1–5 are a dependency chain. Tempting to fan them out for speed; don't.
 - **Treating every existing codebase the same** — assuming an existing project always needs the full `project-alignment` retrofit (wastes a cycle on an already-current project) or always just needs a quick `abstract-data` sync (skips a real audit a drifted project needs). Ask; don't default either way.
 - **Flattening version history** — writing a second or later pass directly into `docs/spec/[spec-name]/` without first migrating the existing flat content into `v.1.0/`. This either overwrites the prior decision set or commingles two passes' artifacts in one un-versioned folder — always resolve the output path (including the migration) before any phase writes anything.
-- **Treating the brainstorm's ADR as already accepted** — writing `Status: Accepted` or a real `ADR-NNN` number onto Phase 3's draft. Nothing here is project history until the spec actually proceeds and someone runs the promotion step in "ADR lifecycle" — the brainstorm only ever produces a proposal.
+- **Treating the brainstorm's ADR as already accepted** — writing `Status: Accepted` or a real `ADR-<NNN>` number onto Phase 3's draft. Nothing here is project history until the spec actually proceeds and someone runs the promotion step in "ADR lifecycle" — the brainstorm only ever produces a proposal.
 
 ## Notion access
 

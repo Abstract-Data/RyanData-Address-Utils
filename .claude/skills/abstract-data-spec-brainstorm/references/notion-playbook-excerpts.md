@@ -7,12 +7,14 @@ Every subagent should prefer a live Notion pull over this file — it's a snapsh
 **The constitution pattern (GitHub Spec Kit):** A constitution is a high-level, immutable set of project principles applied across every session. It answers what kind of project this is, what the non-negotiable constraints are, and what done looks like. It lives in the repo, is referenced from AGENTS.md, and is NOT a TASK.md — it defines permanent principles, not per-session tasks.
 
 **The EARS pattern (AWS Kiro):**
-```
+
+```text
 WHEN [trigger condition]
 THE [system component]
 SHALL [required behavior]
 SO THAT [business reason]
 ```
+
 EARS criteria are directly executable as test cases — the criterion IS the test specification.
 
 **BMAD role taxonomy:** PM (requirements, Phase 1), Architect (system design/ADRs, Phase 2), Engineer (implementation, Phase 4), QA (test cases, Phase 3+4), DevOps (deployment/CI-CD, Phase 4 infra tasks). Solo developers play PM and Architect; agents play Engineer, QA, and DevOps.
@@ -22,7 +24,8 @@ EARS criteria are directly executable as test cases — the criterion IS the tes
 **Universal Python stack:** Python 3.11+ with uv for package management; pytest + Hypothesis for testing; ruff for linting and formatting; pre-commit hooks. Async-first design where I/O is involved; strong typing throughout; explicit over implicit; fail fast, fail loud.
 
 **Agent Scope Declaration** (required immediately after the header of every generated AGENTS.md):
-```
+
+```text
 ## Agent Scope
 Reads:    {list directories/resources the agent may read}
 Writes:   {list directories/resources the agent may write}

@@ -26,7 +26,7 @@ cover.
 
 ## 1. Core architecture: one logic layer, two thin adapters
 
-```
+```text
 project/
 ├── core/          # pure logic — NO typer/rich/mcp imports
 ├── cli.py         # Typer: @app.command() wrappers around core (+ Rich UI)
@@ -57,11 +57,14 @@ app.add_typer(mcp_app, name="mcp")
 def serve(transport: str = "stdio", host: str = "127.0.0.1", port: int = 8000):
     if transport == "stdio":
         mcp.run(transport="stdio")     # default; what Claude Desktop/Code/Cursor expect locally
-    else:
+    elif transport == "http":
         mcp.run(transport="http", host=host, port=port)
+    else:
+        raise typer.BadParameter(f"Unknown transport: {transport}. Use 'stdio' or 'http'.")
 ```
 
 Claude Desktop config for a stdio server:
+
 ```json
 {"mcpServers": {"my-tool": {"command": "my-tool", "args": ["mcp", "serve"]}}}
 ```
@@ -94,6 +97,7 @@ progress → stderr. Rich supports this with `Console(stderr=True)`.
 *documented*. Codes >128 are reserved for signal termination (130 = SIGINT).
 
 **Structured errors:**
+
 ```json
 {"ok": false, "error": {"code": "CONFIG_MISSING", "message": "No API token configured.",
  "fix": "mytool auth login  # or set MYTOOL_TOKEN", "retryable": false}}
@@ -139,6 +143,7 @@ ordering. Disable pretty exceptions for agent/CI legibility:
 `typer.Typer(pretty_exceptions_enable=False)`, or at minimum `pretty_exceptions_show_locals=False`.
 
 Testing:
+
 ```python
 from typer.testing import CliRunner
 runner = CliRunner()
@@ -148,6 +153,7 @@ def test_json_mode():
     assert result.exit_code == 0
     import json; json.loads(result.stdout)
 ```
+
 `CliRunner(mix_stderr=False)` asserts stdout/stderr separately.
 
 ## 4. Rich patterns
@@ -175,6 +181,7 @@ def get_value(cli_value, env_value, config_value, *, prompt, no_input):
             "value required; pass --value, set MYTOOL_VALUE, or add it to config")
     return questionary.text(prompt).ask()
 ```
+
 `.ask()` returns `None` on Ctrl-C — handle it, prefer over `.unsafe_ask()`. `default=` on every
 prompt. `questionary.confirm(..., default=False)` for destructive confirmations, plus
 `--yes`/`--force`. `questionary.password()` for secrets.
@@ -194,10 +201,18 @@ class Settings(BaseSettings):
     @classmethod
     def settings_customise_sources(cls, settings_cls, init_settings, env_settings,
                                    dotenv_settings, file_secret_settings):
-        return (init_settings, env_settings,
-                TomlConfigSettingsSource(settings_cls, toml_file="mytool.toml"),
-                file_secret_settings)
+        from pathlib import Path
+        import typer
+        # Project-local config (walks up like git)
+        project_toml = TomlConfigSettingsSource(settings_cls, toml_file="mytool.toml")
+        # User config (~/.config/mytool/config.toml or XDG equivalent)
+        user_toml = TomlConfigSettingsSource(
+            settings_cls, toml_file=Path(typer.get_app_dir("mytool")) / "config.toml"
+        )
+        # Precedence: flags > env > project config > user config > file secrets > defaults
+        return (init_settings, env_settings, project_toml, user_toml, file_secret_settings)
 ```
+
 Precedence: flags > env > project config > user config > defaults. Validation errors: dump
 `ValidationError.errors()` into the error envelope for `--json`, friendly summary for humans.
 Validate CLI args into a Pydantic model early; pass the validated model into `core/`.
@@ -230,15 +245,43 @@ file as explicit opt-in (XDG dir, `600` perms, warn loudly).
 ```python
 import os, keyring
 from keyring.errors import NoKeyringError
+from pathlib import Path
+import typer
 
-def get_token():
+def get_token(allow_token_file: bool = False):
+    """Get authentication token from environment, keyring, or file.
+
+    Args:
+        allow_token_file: If True, fall back to reading a plaintext token file
+                          from XDG_CONFIG_HOME. Defaults to False for security.
+    """
+    # 1. Environment variable (CI/agents)
     if tok := os.getenv("MYTOOL_TOKEN"):
         return tok
+    # 2. System keyring (interactive desktop)
     try:
-        return keyring.get_password("mytool", "default")
+        tok = keyring.get_password("mytool", "default")
+        if tok:  # Check for empty string, not just None
+            return tok
     except NoKeyringError:
+        pass
+    # 3. Plaintext file (explicit opt-in, with warnings)
+    if allow_token_file:
         return _read_token_file()
+    return None
+
+def _read_token_file():
+    """Read token from file with security checks and warnings."""
+    token_path = Path(typer.get_app_dir("mytool")) / "token"
+    if not token_path.exists():
+        return None
+    # Verify file permissions (600 = owner read/write only)
+    if token_path.stat().st_mode & 0o777 != 0o600:
+        print("WARNING: token file has unsafe permissions; expected 600", file=sys.stderr)
+    print(f"WARNING: Reading plaintext token from {token_path}", file=sys.stderr)
+    return token_path.read_text().strip()
 ```
+
 Never accept secrets via `--password`-style flags — they leak into `ps`/shell history.
 
 ## 11. FastMCP / MCP dual-surface

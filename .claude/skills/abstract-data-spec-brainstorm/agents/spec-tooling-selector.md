@@ -10,7 +10,8 @@ This is the most consequential phase — a wrong tooling call here compounds thr
 ## Decision tree
 
 **If Python was selected:**
-```
+
+```text
 Package manager: uv (always)
 Framework:       FastAPI (API/service) | None (pipeline, script, CLI)
 Data layer:       SQLModel + Supabase (relational, app state) | Polars (data pipeline / ETL) | None (an external system is the actual source of truth — e.g. a config-orchestration CLI wrapping someone else's API)
@@ -24,7 +25,8 @@ Secrets:          1Password Environments (always)
 A CLI or local tool is a legitimate project shape, not a stripped-down service — don't force service assumptions onto it. If the intent is "wrap someone else's API so I stop clicking through their UI" rather than "run continuously and hold state," the `None` / `N/A` options above are the correct canonical answer, not a gap to paper over with a Railway deploy or a Supabase table it doesn't need.
 
 **If TypeScript was selected:**
-```
+
+```text
 Runtime:          Bun (preferred) | Node.js
 Framework:        Next.js (full-stack) | TanStack Start | Astro (content/SSG or full-stack SSR) | None (CLI/local tool)
 Query layer:      TanStack Query | Supabase client | None (CLI/local tool, no persisted app state)

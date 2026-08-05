@@ -26,6 +26,7 @@ import datetime as _dt
 import json
 import sys
 from pathlib import Path
+from typing import TypedDict
 
 SKILL_VERSION = "0.9.1"
 
@@ -53,6 +54,56 @@ DEFAULT_SURFACES = [
     "data flow",
 ]
 
+# Mode-specific required critics (minimum to consider review complete)
+MODE_REQUIRED_CRITICS = {
+    "audit-only": {"LeadCritic", "Synthesizer"},
+    "full": {"LeadCritic", "Synthesizer"},
+    "security-deep": {"LeadCritic", "SecurityAuditor", "Synthesizer"},
+    "maintainability-deep": {"LeadCritic", "MaintainabilityEnforcer", "Synthesizer"},
+    "quick": {"LeadCritic", "Synthesizer"},
+}
+
+
+# TypedDict definitions for receipt structure
+class FindingCounts(TypedDict):
+    critical: int
+    high: int
+    medium: int
+    low: int
+    total: int
+
+
+class SurfaceEntry(TypedDict):
+    surface: str
+    examined: bool
+
+
+class Receipt(TypedDict):
+    skill: str
+    skill_version: str
+    timestamp_utc: str
+    target: str
+    mode: str
+    reviewer: str
+    context7_grounding: str
+    critics_ran: list[str]
+    critics_skipped: list[str]
+    findings: FindingCounts
+    surfaces_reviewed: list[SurfaceEntry]
+    notes: str
+    review_complete: bool
+
+
+def _non_negative_int(value: str) -> int:
+    """Validate and parse non-negative integer for argparse."""
+    try:
+        ivalue = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{value} is not a valid integer")
+    if ivalue < 0:
+        raise argparse.ArgumentTypeError(f"{value} is negative; severity counts must be >= 0")
+    return ivalue
+
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Write an abstract-data-code-devil review receipt.")
@@ -74,10 +125,10 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         choices=["used", "unavailable", "not-needed"],
         help="Whether Context7 documentation grounding was used.",
     )
-    p.add_argument("--critical", type=int, default=0)
-    p.add_argument("--high", type=int, default=0)
-    p.add_argument("--medium", type=int, default=0)
-    p.add_argument("--low", type=int, default=0)
+    p.add_argument("--critical", type=_non_negative_int, default=0)
+    p.add_argument("--high", type=_non_negative_int, default=0)
+    p.add_argument("--medium", type=_non_negative_int, default=0)
+    p.add_argument("--low", type=_non_negative_int, default=0)
     p.add_argument(
         "--checked",
         default="",
@@ -101,7 +152,7 @@ def _split(csv: str) -> list[str]:
     return [item.strip() for item in csv.split(",") if item.strip()]
 
 
-def build_receipt(args: argparse.Namespace) -> dict:
+def build_receipt(args: argparse.Namespace) -> Receipt:
     critics_ran = _split(args.critics)
     unknown = [c for c in critics_ran if c not in ALL_CRITICS]
     if unknown:
@@ -109,15 +160,23 @@ def build_receipt(args: argparse.Namespace) -> dict:
     critics_skipped = [c for c in ALL_CRITICS if c not in critics_ran]
 
     checked = _split(args.checked) or list(DEFAULT_SURFACES)
-    surfaces = [{"surface": s, "examined": s in checked} for s in sorted(set(DEFAULT_SURFACES) | set(checked))]
+    surfaces: list[SurfaceEntry] = [
+        {"surface": s, "examined": s in checked}
+        for s in sorted(set(DEFAULT_SURFACES) | set(checked))
+    ]
 
-    counts = {
+    counts: FindingCounts = {
         "critical": args.critical,
         "high": args.high,
         "medium": args.medium,
         "low": args.low,
+        "total": args.critical + args.high + args.medium + args.low,
     }
-    counts["total"] = sum(counts.values())
+
+    # Check mode-specific required critics
+    required = MODE_REQUIRED_CRITICS.get(args.mode, set())
+    critics_ran_set = set(critics_ran)
+    review_complete = required.issubset(critics_ran_set)
 
     return {
         "skill": "abstract-data-code-devil",
@@ -132,12 +191,12 @@ def build_receipt(args: argparse.Namespace) -> dict:
         "findings": counts,
         "surfaces_reviewed": surfaces,
         "notes": args.notes,
-        "review_complete": bool(critics_ran) and "Synthesizer" in critics_ran,
+        "review_complete": review_complete,
     }
 
 
-def render_markdown(r: dict) -> str:
-    f = r["findings"]
+def render_markdown(r: Receipt) -> str:
+    f: FindingCounts = r["findings"]
     lines = [
         "# Adversarial Code Critic — Review Receipt",
         "",
@@ -171,6 +230,19 @@ def main(argv: list[str]) -> int:
     args = _parse_args(argv)
     receipt = build_receipt(args)
 
+    # Check if mode requirements are met; if not, report and exit non-zero WITHOUT writing receipt
+    if not receipt["review_complete"]:
+        required = MODE_REQUIRED_CRITICS.get(args.mode, set())
+        critics_ran_set = set(receipt["critics_ran"])
+        missing = required - critics_ran_set
+        print(
+            f"ERROR: Review incomplete for mode '{args.mode}'. "
+            f"Missing required critics: {', '.join(sorted(missing))}",
+            file=sys.stderr,
+        )
+        return 1
+
+    # Write receipt files only if complete
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     json_path = out.with_suffix(".json")
@@ -179,8 +251,6 @@ def main(argv: list[str]) -> int:
     md_path.write_text(render_markdown(receipt), encoding="utf-8")
 
     print(f"Receipt written:\n  {json_path}\n  {md_path}")
-    if not receipt["review_complete"]:
-        print("NOTE: review marked incomplete (Synthesizer not among critics that ran).", file=sys.stderr)
     return 0
 
 

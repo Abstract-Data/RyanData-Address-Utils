@@ -73,6 +73,14 @@ For each Phase 2 decision, name the specific test that proves it:
 **CI non-TTY job:** [confirm NO_COLOR=1 test run + pipe-to-jq job]
 **MCP in-memory client test (if applicable):** [confirm] | N/A — no MCP surface
 **Shell completion / --version / changelog:** [confirmed shipping, or deferred with reason]
+
+### Repository quality gates (mandatory)
+- [ ] Ruff formatting check (`ruff format --check`)
+- [ ] Ruff linting clean (`ruff check`)
+- [ ] Type checking (`uv run ty check src`)
+- [ ] pytest coverage >= 80%
+- [ ] Hypothesis tests for parsers and validators (if applicable to this project's domain)
+
 **Open questions for the human:** [anything this phase couldn't fully test-plan because an
 earlier phase carried its own open question forward — e.g. can't finalize the idempotency test
 until Phase 3's open question about where a write happens is resolved] | none

@@ -28,11 +28,16 @@ skip grounding and make sure every library-behavior finding is labeled
 1. Identify the libraries whose behavior the review actually hinges on — auth, ORM/DB clients, HTTP
    clients, framework routing/caching, serialization, task queues. Don't fetch docs for libraries
    that aren't load-bearing for any finding.
-2. For each, call `resolve-library-id` with the library name.
-3. Call `query-docs` on the resolved ID, scoped to the topic the code exercises (e.g., for a retry
+2. For each library, read and record its exact pinned version from the project manifest/lockfile
+   (e.g., `requirements.txt`, `pyproject.toml`, `package.json`, `Cargo.toml`).
+3. Call `resolve-library-id` with the library name and version to select a matching Context7 library
+   ID. If no matching ID is found for that version, mark the lookup as "unresolved" in the receipt.
+4. For resolved IDs, call `query-docs` scoped to the topic the code exercises (e.g., for a retry
    concern, fetch the HTTP client's timeout/retry docs).
-4. Pass the returned excerpts into each critic's CONTEXT block. Keep excerpts tight and relevant —
+5. Pass the returned excerpts into each critic's CONTEXT block. Keep excerpts tight and relevant —
    the critics need the authoritative behavior, not the whole manual.
+6. Record in the receipt: library name, pinned version from manifest, resolved Context7 ID (or
+   "unresolved"), and which topics were queried.
 
 ## How critics should cite it
 

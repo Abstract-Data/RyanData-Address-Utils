@@ -84,6 +84,14 @@ Pick based on scope and stakes; confirm with the user at Checkpoint A.
 All modes except `quick` open with a **Cartographer** recon pass so the critics share one grounded
 picture of intended vs. actual behavior.
 
+| Mode | Cartographer | First Critic | Participating Specialists | Notes |
+|------|--------------|--------------|---------------------------|-------|
+| `audit-only` (default) | Yes | LeadCritic | SecurityAuditor, MaintainabilityEnforcer, FailureModeAnalyst, RedTeamAttacker | Read-only; hardened report only |
+| `full` | Yes | LeadCritic | All specialists | Debate rounds + optional second RedTeamAttacker pass |
+| `security-deep` | Yes | SecurityAuditor | LeadCritic, FailureModeAnalyst, RedTeamAttacker | SecurityAuditor leads and expands |
+| `maintainability-deep` | Yes | MaintainabilityEnforcer | LeadCritic, RedTeamAttacker | MaintainabilityEnforcer leads |
+| `quick` | No | LeadCritic | None (Synthesizer only) | Cartographer skipped for speed |
+
 - **`audit-only`** *(default, read-only)* — Cartographer → LeadCritic + parallel specialists →
   Synthesizer. No code changes, just the hardened report.
 - **`full`** — audit-only plus debate rounds and an optional second RedTeamAttacker pass on the final
@@ -204,11 +212,12 @@ a concrete flaw here, style nits that aren't real bugs, and softening words ("mi
 
 ## Receipts (confirming the review happened)
 
-`scripts/write_receipt.py` writes a JSON + Markdown receipt so the user can confirm — and later
-audit — exactly what was reviewed. Run it in Step 5 once the Synthesizer report is final:
+The skill's `scripts/write_receipt.py` writes a JSON + Markdown receipt so the user can confirm — and
+later audit — exactly what was reviewed. Run it in Step 5 once the Synthesizer report is final, using
+the full path from this skill's directory (e.g., `.claude/skills/abstract-data-code-devil/scripts/write_receipt.py`):
 
 ```bash
-python scripts/write_receipt.py \
+python .claude/skills/abstract-data-code-devil/scripts/write_receipt.py \
   --target "<repo/module/diff description>" \
   --mode audit-only \
   --critics Cartographer,LeadCritic,RedTeamAttacker,SecurityAuditor,MaintainabilityEnforcer,FailureModeAnalyst,Synthesizer \

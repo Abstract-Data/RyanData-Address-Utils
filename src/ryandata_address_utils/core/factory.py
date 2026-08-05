@@ -83,8 +83,15 @@ class PluginFactory[T](ABC):
             Instance of the requested type.
 
         Raises:
+            TypeError: If 'name' is passed as a keyword argument in **kwargs.
             ValueError: If the type name is not registered.
         """
+        # Detect if 'name' was passed via kwargs (attempting to bypass positional-only)
+        if "name" in kwargs:
+            raise TypeError(
+                f"{cls.__name__}.create() argument 'name' must be positional, not keyword"
+            )
+
         cls._ensure_defaults_registered()
 
         type_name = name if name is not None else cls._default_type

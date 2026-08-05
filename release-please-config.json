@@ -1,10 +1,10 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
-  "release-type": "simple",
   "separate-pull-requests": true,
   "packages": {
     "src/ryandata_address_utils": {
       "component": "address-utils",
+      "release-type": "python",
       "changelog-path": "CHANGELOG.md",
       "extra-files": [
         "pyproject.toml"
@@ -12,6 +12,7 @@
     },
     "src/pisd_shape": {
       "component": "pisd-shape",
+      "release-type": "python",
       "changelog-path": "src/pisd_shape/CHANGELOG.md",
       "extra-files": [
         "src/pisd_shape/__init__.py"
