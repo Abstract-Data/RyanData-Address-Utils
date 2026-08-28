@@ -29,7 +29,7 @@ DATA_ARCHIVES: list[tuple[str, str]] = [
     ),
 ]
 
-app = typer.Typer(help="Set up libpostal locally without Docker.")
+app = typer.Typer(help="RyanData address utils: libpostal setup and uniqueness matching.")
 
 
 def _init_trogon(app: typer.Typer) -> None:
@@ -307,6 +307,54 @@ def setup(
         "extracted archives and that LIBPOSTAL_DATA_DIR points to it."
     )
     raise typer.Exit(code=1)
+
+
+@app.command()
+def uniqueness(
+    voterfile: Path = typer.Option(  # noqa: B008
+        ...,
+        "--voterfile",
+        exists=True,
+        readable=True,
+        help="Texas SOS voter extract (CSV).",
+    ),
+    sources: str = typer.Option(  # noqa: B008
+        "txgio",
+        "--sources",
+        help="Comma-separated match universes: txgio, tiger, or both.",
+    ),
+    cache_dir: Path | None = typer.Option(  # noqa: B008
+        None,
+        "--cache-dir",
+        help="Reference cache (default ~/.cache/ryandata-address-utils).",
+    ),
+    out: Path | None = typer.Option(  # noqa: B008
+        None,
+        "--out",
+        help="Output directory for outcomes.csv and summary.json.",
+    ),
+    counties: str | None = typer.Option(  # noqa: B008
+        None,
+        "--counties",
+        help="Optional county-name subset. Default: every COUNTY on the voter file.",
+    ),
+    force_fetch: bool = typer.Option(  # noqa: B008
+        False,
+        "--force-fetch",
+        help="Re-download shapefiles even when the cache looks complete.",
+    ),
+) -> None:
+    """Fetch TxGIO / TIGER ADDRFEAT / TLC precincts as needed and run uniqueness."""
+    from ryandata_address_utils.match.cli import uniqueness as run
+
+    run(
+        voterfile=voterfile,
+        sources=sources,
+        cache_dir=cache_dir,
+        out=out,
+        counties=counties,
+        force_fetch=force_fetch,
+    )
 
 
 def main() -> None:

@@ -50,6 +50,7 @@ This document provides context for AI coding assistants (Claude, GPT, Copilot, C
 | `src/ryandata_address_utils/validation/` | Validators (ZIP, state, composite) |
 | `src/ryandata_address_utils/data/` | Data sources (CSV-backed ZIP database) |
 | `src/ryandata_address_utils/core/` | Shared utilities (formatters, tracking, errors) |
+| `src/ryandata_address_utils/match/` | Drop-direction uniqueness + ADDRFEAT range match (pandas extra; not AddressService) |
 
 ---
 
@@ -133,6 +134,14 @@ class MyValidator:
 1. Add field to `models/address.py` with proper `Field()` definition
 2. Add to `ADDRESS_FIELDS` enum if needed for iteration
 3. Update `AddressFormatter` if field affects full address computation
+
+### Drop-direction uniqueness
+
+Do not fold matching into `AddressService`. Import from the submodule. The uniqueness CLI fetches TxGIO / TIGER ADDRFEAT / TLC precincts and attaches `pct` via PIP (needs geopandas). DataFrame helpers need pandas.
+
+```bash
+uv run ryandata-address-utils-setup uniqueness --voterfile FILE --sources txgio,tiger
+```
 
 ### Working with Pandas
 

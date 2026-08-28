@@ -66,6 +66,16 @@ ryandata_address_utils/
 ├── service.py               # AddressService (main facade)
 ├── protocols.py             # Protocol definitions (interfaces)
 ├── pandas_ext.py            # Pandas DataFrame integration
+├── match/                   # Drop-direction uniqueness + ADDRFEAT ranges
+│   ├── __init__.py          # MATCH / EXCLUDED_PROBLEM / UNMATCHED exports
+│   ├── keys.py              # canon_dir, dir_pair_canon (PRE|POST), FULLNAME nodir key
+│   ├── uniqueness.py        # classify_problem_keys, geography grain, twins, patterns
+│   ├── ranges.py            # house_in_addrfeat_range, match_addrfeat_ranges
+│   ├── fetch/               # TxGIO, TIGER ADDRFEAT, TLC precinct downloaders
+│   ├── voters.py            # SOS extract → uniqueness keys
+│   ├── geo.py               # geopandas PIP (optional)
+│   ├── run.py               # fetch-if-missing + match orchestrator
+│   └── cli.py               # uniqueness --voterfile --sources
 ├── setup_cli.py             # CLI for libpostal setup
 │
 ├── core/                    # Reusable utilities (SOLID extracted)

@@ -81,6 +81,49 @@ parsed = service.parse_dataframe(df, "address", prefix="addr_")
 print(parsed[["addr_AddressNumber", "addr_StreetName", "addr_ZipCode"]])
 ```
 
+## Drop-direction uniqueness
+
+Match rows after dropping street direction, keyed on number + name + type + county + precinct. Pass `include_unit=True` to add unit to that key so unit-bearing rows do not collapse. Keys with two or more distinct directionals (blank counts as a state; `EAST` and `E` collapse) are refused.
+
+Direction is a **PRE|POST** pair, not prefix-only. `E MAIN` (`E|`) is not `MAIN E` (`|E`). Suffix twins (`MAIN ST N` vs `MAIN ST S`) are refused the same way as `E`/`W`. TxGIO uses `St_PreDir` + `St_PosDir`; TIGER `FULLNAME` keeps both ends; voter rows use `RSTPRE` + `RSTSFX`. The motivating file is a vendor extract **missing** street direction, not a raw SOS file that already has `RSTPRE`.
+
+`summary.json` reports uniqueness at precinct, county, and ZIP (ZIP when `Post_Code` is present). CD is included only if a `cd` column already exists — this package does not download congressional districts. It also reports **cross-precinct** twins: keys that look unique once precinct splits them, but collide at county. That pool is the silent false-match reservoir if `PCT` is stale or in a different namespace than the TLC code stamped onto the points.
+
+Using precinct as the join key is circular if the reason you matched TxGIO is to place or validate precinct. Prefer TLC `Precincts##P` (current default is the 2026 primary vintage) over an older general-election polygon. House-number suffixes (`900` vs `900A`) are not in the uniqueness key.
+
+Derek Ryan's one-liner: a Texas SOS voter extract and which universes to run. The CLI fetches TxGIO address points, TIGER ADDRFEAT, and TLC precinct polygons into `~/.cache/ryandata-address-utils` when they are missing.
+
+```bash
+uv sync --extra pandas
+# shapefile readers / point-in-polygon:
+uv add geopandas
+uv run ryandata-address-utils-setup uniqueness \
+  --voterfile ~/path/to/texas.csv \
+  --sources txgio,tiger \
+  --out uniqueness_out
+```
+
+`--sources` is `txgio`, `tiger`, or both. Counties default to every `COUNTY` on the voter file. Writes `outcomes.csv` and `summary.json`.
+
+Library use when you already have `pct`:
+
+```python
+from ryandata_address_utils.match import (
+    addrfeat_range_field_names,
+    match_addrfeat_ranges,
+    match_drop_direction,
+)
+
+voters["outcome"] = match_drop_direction(voters, points)
+voters["outcome_unit"] = match_drop_direction(voters, points, include_unit=True)
+
+lfrom, lto, rfrom, rto = addrfeat_range_field_names(addrfeat.columns)
+ranges = addrfeat.rename(columns={lfrom: "lfrom", lto: "lto", rfrom: "rfrom", rto: "rto"})
+voters["tiger_outcome"] = match_addrfeat_ranges(voters, ranges)
+```
+
+`match_addrfeat_ranges` expects canonical `lfrom`/`lto`/`rfrom`/`rto` columns. Raw TIGER 2024 `LFROMADD` / 2025 `LFROMHN` names must be resolved first. Import from `ryandata_address_utils.match`, not the top-level package.
+
 ## Programmatic build
 
 ```python
@@ -134,6 +177,7 @@ flowchart LR
 - Builder: `AddressBuilder` for programmatic address construction
 - Audit trail: `ProcessLog`, `ProcessEntry` for tracking transformations
 - Validation base: `ValidationBase`, `RyanDataValidationBase` for model mixins
+- Drop-direction match: `ryandata_address_utils.match` plus `uniqueness --voterfile --sources txgio,tiger` (fetches TxGIO, TIGER ADDRFEAT, TLC precincts)
 
 ## Documentation
 
