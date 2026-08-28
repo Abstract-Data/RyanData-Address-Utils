@@ -57,6 +57,22 @@ def canon_dir(value: str | None) -> str:
     return text
 
 
+def dir_pair_canon(pre: str | None, post: str | None) -> str:
+    """USPS pair ``PRE|POST``. Positions are distinct: ``E|`` is not ``|E``.
+
+    Parameters
+    ----------
+    pre, post
+        Raw prefix and suffix directionals. ``None`` and whitespace are empty.
+
+    Returns
+    -------
+    str
+        Canonical pair such as ``E|``, ``|W``, or ``|``.
+    """
+    return f"{canon_dir(pre)}|{canon_dir(post)}"
+
+
 def normalize_precinct_code(value: object) -> str:
     """Reduce a precinct code to a comparable form.
 
@@ -192,6 +208,11 @@ def canon_dir_series(values: Any) -> Any:
     for word, abbr in sorted(DIRECTIONALS.items(), key=lambda kv: -len(kv[0])):
         text = text.mask(text.eq(word), abbr)
     return text
+
+
+def dir_pair_canon_series(pre: Any, post: Any) -> Any:
+    """Vectorized :func:`dir_pair_canon`."""
+    return canon_dir_series(pre).astype(str) + "|" + canon_dir_series(post).astype(str)
 
 
 def precinct_series(values: Any) -> Any:

@@ -8,6 +8,7 @@ from hypothesis import strategies as st
 
 from ryandata_address_utils.match import (
     canon_dir,
+    dir_pair_canon,
     drop_direction_key,
     fullname_dir_and_nodir_key,
     house_int,
@@ -32,6 +33,15 @@ class TestCanonDir:
 
     def test_unknown_token_stays_uppercased(self) -> None:
         assert canon_dir("FOO") == "FOO"
+
+
+class TestDirPairCanon:
+    def test_dir_pair_positions_are_distinct(self) -> None:
+        assert dir_pair_canon("E", "") == "E|"
+        assert dir_pair_canon("", "E") == "|E"
+        assert dir_pair_canon("E", "") != dir_pair_canon("", "E")
+        assert dir_pair_canon("EAST", "") == dir_pair_canon("E", "")
+        assert dir_pair_canon(None, None) == "|"
 
 
 class TestNormalizePrecinctCode:

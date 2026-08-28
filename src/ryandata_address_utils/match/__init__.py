@@ -26,6 +26,7 @@ from __future__ import annotations
 from ryandata_address_utils.match.keys import (
     DIRECTIONALS,
     canon_dir,
+    dir_pair_canon,
     drop_direction_key,
     fullname_dir_and_nodir_key,
     house_int,
@@ -52,6 +53,7 @@ __all__ = [
     "addrfeat_range_field_names",
     "canon_dir",
     "classify_problem_keys",
+    "dir_pair_canon",
     "drop_direction_key",
     "fullname_dir_and_nodir_key",
     "house_in_addrfeat_range",

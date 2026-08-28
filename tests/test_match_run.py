@@ -55,7 +55,8 @@ def test_run_writes_outcomes_for_both_sources(tmp_path: Path) -> None:
             "street_key_nodir": ["MAIN ST"],
             "county": ["48001"],
             "pct": ["1"],
-            "dir": ["E"],
+            "pre_dir": ["E"],
+            "post_dir": [""],
         }
     )
     ranges = pd.DataFrame(
@@ -157,7 +158,8 @@ def test_default_fetchers_and_loaders_are_imported(
             "street_key_nodir": ["MAIN ST"],
             "county": ["48001"],
             "pct": ["1"],
-            "dir": ["E"],
+            "pre_dir": ["E"],
+            "post_dir": [""],
         }
     )
     ranges = pd.DataFrame(
@@ -241,7 +243,7 @@ def test_skips_fips_with_no_voters_and_concatenates_empty(
         fetch_precincts_fn=lambda **k: tmp_path,
         fetch_txgio_fn=lambda **k: tmp_path,
         load_txgio_fn=lambda **k: pd.DataFrame(
-            columns=["num", "street_key_nodir", "county", "pct", "dir"]
+            columns=["num", "street_key_nodir", "county", "pct", "pre_dir", "post_dir"]
         ),
     )
     result = pd.read_csv(tmp_path / "o" / "outcomes.csv", dtype=str)

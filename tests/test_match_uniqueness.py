@@ -29,7 +29,8 @@ class TestClassifyProblemKeys:
                 "street_key_nodir": "MAIN ST",
                 "county": "48001",
                 "pct": "1",
-                "dir": "E",
+                "pre_dir": "E",
+                "post_dir": "",
                 "unit": "",
             },
             {
@@ -37,7 +38,8 @@ class TestClassifyProblemKeys:
                 "street_key_nodir": "MAIN ST",
                 "county": "48001",
                 "pct": "1",
-                "dir": "W",
+                "pre_dir": "W",
+                "post_dir": "",
                 "unit": "",
             },
         )
@@ -52,7 +54,8 @@ class TestClassifyProblemKeys:
                 "street_key_nodir": "MAIN ST",
                 "county": "48001",
                 "pct": "1",
-                "dir": "E",
+                "pre_dir": "E",
+                "post_dir": "",
                 "unit": "",
             },
             {
@@ -60,7 +63,8 @@ class TestClassifyProblemKeys:
                 "street_key_nodir": "MAIN ST",
                 "county": "48001",
                 "pct": "1",
-                "dir": "EAST",
+                "pre_dir": "EAST",
+                "post_dir": "",
                 "unit": "",
             },
         )
@@ -75,7 +79,8 @@ class TestClassifyProblemKeys:
                 "street_key_nodir": "MAIN ST",
                 "county": "48001",
                 "pct": "1",
-                "dir": "E",
+                "pre_dir": "E",
+                "post_dir": "",
                 "unit": "",
             },
             {
@@ -83,7 +88,8 @@ class TestClassifyProblemKeys:
                 "street_key_nodir": "MAIN ST",
                 "county": "48001",
                 "pct": "1",
-                "dir": "",
+                "pre_dir": "",
+                "post_dir": "",
                 "unit": "",
             },
         )
@@ -97,7 +103,8 @@ class TestClassifyProblemKeys:
                 "street_key_nodir": "OAK AVE",
                 "county": "48001",
                 "pct": "2",
-                "dir": "N",
+                "pre_dir": "N",
+                "post_dir": "",
                 "unit": "",
             },
             {
@@ -105,7 +112,8 @@ class TestClassifyProblemKeys:
                 "street_key_nodir": "OAK AVE",
                 "county": "48001",
                 "pct": "2",
-                "dir": "S",
+                "pre_dir": "S",
+                "post_dir": "",
                 "unit": "",
             },
         )
@@ -119,7 +127,8 @@ class TestClassifyProblemKeys:
                 "street_key_nodir": "LOOP",
                 "county": "48001",
                 "pct": "1",
-                "dir": "N",
+                "pre_dir": "N",
+                "post_dir": "",
                 "unit": "",
             },
             {
@@ -127,7 +136,8 @@ class TestClassifyProblemKeys:
                 "street_key_nodir": "LOOP",
                 "county": "48001",
                 "pct": "1",
-                "dir": "NE",
+                "pre_dir": "NE",
+                "post_dir": "",
                 "unit": "",
             },
         )
@@ -142,7 +152,8 @@ class TestClassifyProblemKeys:
                 "street_key_nodir": "MAIN ST",
                 "county": "48001",
                 "pct": "1",
-                "dir": "E",
+                "pre_dir": "E",
+                "post_dir": "",
                 "unit": "#1",
             },
             {
@@ -150,7 +161,8 @@ class TestClassifyProblemKeys:
                 "street_key_nodir": "MAIN ST",
                 "county": "48001",
                 "pct": "1",
-                "dir": "W",
+                "pre_dir": "W",
+                "post_dir": "",
                 "unit": "#2",
             },
         )
@@ -166,7 +178,8 @@ class TestClassifyProblemKeys:
                 "street_key_nodir": "MAIN ST",
                 "county": "48001",
                 "pct": "PCT 3",
-                "dir": "E",
+                "pre_dir": "E",
+                "post_dir": "",
                 "unit": "",
             },
             {
@@ -174,7 +187,8 @@ class TestClassifyProblemKeys:
                 "street_key_nodir": "MAIN ST",
                 "county": "48001",
                 "pct": "0003",
-                "dir": "W",
+                "pre_dir": "W",
+                "post_dir": "",
                 "unit": "",
             },
         )
@@ -190,7 +204,8 @@ class TestMatchDropDirection:
                 "street_key_nodir": "MAIN ST",
                 "county": "48001",
                 "pct": "1",
-                "dir": "E",
+                "pre_dir": "E",
+                "post_dir": "",
             }
         )
         voters = _points(
@@ -210,14 +225,16 @@ class TestMatchDropDirection:
                 "street_key_nodir": "MAIN ST",
                 "county": "48001",
                 "pct": "1",
-                "dir": "E",
+                "pre_dir": "E",
+                "post_dir": "",
             },
             {
                 "num": "900",
                 "street_key_nodir": "MAIN ST",
                 "county": "48001",
                 "pct": "1",
-                "dir": "W",
+                "pre_dir": "W",
+                "post_dir": "",
             },
         )
         voters = _points(
@@ -237,7 +254,8 @@ class TestMatchDropDirection:
                 "street_key_nodir": "OAK AVE",
                 "county": "48001",
                 "pct": "1",
-                "dir": "E",
+                "pre_dir": "E",
+                "post_dir": "",
             }
         )
         voters = _points(
@@ -257,7 +275,8 @@ class TestMatchDropDirection:
                 "street_key_nodir": "MAIN ST",
                 "county": "48001",
                 "pct": "",
-                "dir": "E",
+                "pre_dir": "E",
+                "post_dir": "",
             }
         )
         voters = _points(
@@ -277,7 +296,8 @@ class TestMatchDropDirection:
                 "street_key_nodir": "MAIN ST",
                 "county": "48001",
                 "pct": "1",
-                "dir": "E",
+                "pre_dir": "E",
+                "post_dir": "",
             }
         )
         voters = pd.DataFrame(
@@ -294,7 +314,9 @@ class TestMatchDropDirection:
         assert out.tolist() == [MATCH]
 
     def test_empty_voters_and_points(self) -> None:
-        empty = pd.DataFrame(columns=["num", "street_key_nodir", "county", "pct", "dir"])
+        empty = pd.DataFrame(
+            columns=["num", "street_key_nodir", "county", "pct", "pre_dir", "post_dir"]
+        )
         voters = _points(
             {"num": "900", "street_key_nodir": "MAIN ST", "county": "48001", "pct": "1"}
         )
@@ -308,7 +330,8 @@ class TestMatchDropDirection:
                 "street_key_nodir": "MAIN ST",
                 "county": "48001",
                 "pct": "1",
-                "dir": "E",
+                "pre_dir": "E",
+                "post_dir": "",
             }
         )
         voters = _points(
@@ -317,3 +340,83 @@ class TestMatchDropDirection:
         classified = classify_problem_keys(points, include_unit=True)
         assert "unit" in classified.columns
         assert match_drop_direction(voters, points, include_unit=True).tolist() == [MATCH]
+
+
+class TestDirPairUniqueness:
+    def test_suffix_only_north_south_same_key_is_problem(self) -> None:
+        frame = _points(
+            {
+                "num": "900",
+                "street_key_nodir": "MAIN ST",
+                "county": "48001",
+                "pct": "1",
+                "pre_dir": "",
+                "post_dir": "N",
+                "unit": "",
+            },
+            {
+                "num": "900",
+                "street_key_nodir": "MAIN ST",
+                "county": "48001",
+                "pct": "1",
+                "pre_dir": "",
+                "post_dir": "S",
+                "unit": "",
+            },
+        )
+        out = classify_problem_keys(frame, include_unit=False)
+        assert out["is_problem"].unique().tolist() == [True]
+        assert out["n_dirs"].unique().tolist() == [2]
+
+    def test_prefix_east_and_suffix_east_same_nodir_key_is_problem(self) -> None:
+        frame = _points(
+            {
+                "num": "900",
+                "street_key_nodir": "MAIN ST",
+                "county": "48001",
+                "pct": "1",
+                "pre_dir": "E",
+                "post_dir": "",
+                "unit": "",
+            },
+            {
+                "num": "900",
+                "street_key_nodir": "MAIN ST",
+                "county": "48001",
+                "pct": "1",
+                "pre_dir": "",
+                "post_dir": "E",
+                "unit": "",
+            },
+        )
+        out = classify_problem_keys(frame, include_unit=False)
+        assert out["is_problem"].unique().tolist() == [True]
+
+    def test_match_drop_direction_excludes_suffix_twin(self) -> None:
+        points = _points(
+            {
+                "num": "900",
+                "street_key_nodir": "MAIN ST",
+                "county": "48001",
+                "pct": "1",
+                "pre_dir": "",
+                "post_dir": "N",
+            },
+            {
+                "num": "900",
+                "street_key_nodir": "MAIN ST",
+                "county": "48001",
+                "pct": "1",
+                "pre_dir": "",
+                "post_dir": "S",
+            },
+        )
+        voters = _points(
+            {
+                "num": "900",
+                "street_key_nodir": "MAIN ST",
+                "county": "48001",
+                "pct": "1",
+            }
+        )
+        assert match_drop_direction(voters, points).tolist() == [EXCLUDED_PROBLEM]

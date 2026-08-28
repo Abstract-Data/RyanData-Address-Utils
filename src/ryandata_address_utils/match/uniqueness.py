@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from ryandata_address_utils.match.keys import (
     as_str_series,
-    canon_dir_series,
+    dir_pair_canon_series,
     precinct_series,
     require_pandas,
 )
@@ -30,8 +30,9 @@ def classify_problem_keys(points: pd.DataFrame, *, include_unit: bool = False) -
     Parameters
     ----------
     points
-        Frame with ``num``, ``street_key_nodir``, ``county``, ``pct``, ``dir``.
-        Optional ``unit`` when ``include_unit`` is true.
+        Frame with ``num``, ``street_key_nodir``, ``county``, ``pct``,
+        ``pre_dir``, ``post_dir``. Optional ``unit`` when ``include_unit``
+        is true.
     include_unit
         When true, unit is part of the uniqueness key.
 
@@ -42,7 +43,7 @@ def classify_problem_keys(points: pd.DataFrame, *, include_unit: bool = False) -
         ``n_points``, and ``is_problem``.
     """
     frame = points.copy()
-    frame["dir_canon"] = canon_dir_series(frame["dir"]).to_numpy()
+    frame["dir_canon"] = dir_pair_canon_series(frame["pre_dir"], frame["post_dir"]).to_numpy()
     frame["num"] = as_str_series(frame["num"]).to_numpy()
     frame["street_key_nodir"] = as_str_series(frame["street_key_nodir"]).to_numpy()
     frame["county"] = as_str_series(frame["county"]).to_numpy()
@@ -78,7 +79,7 @@ def match_drop_direction(
     voters
         Frame with ``num``, ``street_key_nodir``, ``county``, ``pct``.
     points
-        Reference points with those columns plus ``dir``.
+        Reference points with those columns plus ``pre_dir`` and ``post_dir``.
     include_unit
         When true, both frames must carry ``unit`` (filled with ``""`` if
         missing on voters).
