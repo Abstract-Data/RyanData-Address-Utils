@@ -42,6 +42,7 @@ def component_street_key(*parts: object) -> str:
 
 
 def _col(frame: pd.DataFrame, name: str) -> Any:
+    """Return a string series for ``name``, or blanks when the column is absent."""
     pd = require_pandas()
     if name in frame.columns:
         return frame[name].fillna("").astype(str)

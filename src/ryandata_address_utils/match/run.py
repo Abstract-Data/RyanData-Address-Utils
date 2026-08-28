@@ -29,10 +29,12 @@ def parse_sources(sources: str) -> tuple[str, ...]:
 
 
 def default_cache_dir() -> Path:
+    """User-level cache for TxGIO, ADDRFEAT, and TLC precinct downloads."""
     return DEFAULT_CACHE
 
 
 def _fips_for_counties(names: Sequence[str]) -> tuple[str, ...]:
+    """Map county names to unique 5-digit FIPS; unknown names fail loud."""
     fips: list[str] = []
     missing: list[str] = []
     for name in names:
@@ -47,6 +49,7 @@ def _fips_for_counties(names: Sequence[str]) -> tuple[str, ...]:
 
 
 def _concat_outcomes(parts: list[Any], column: str, index: Any) -> Any:
+    """Stack per-county outcome series onto the voter index."""
     pd = require_pandas()
     if not parts:
         return pd.Series([None] * len(index), index=index, name=column)

@@ -17,6 +17,7 @@ def addrfeat_url(fips: str, year: int) -> str:
 
 
 def _existing_shp(dest_dir: Path, fips: str) -> Path | None:
+    """Return the unique ADDRFEAT shapefile for ``fips``, or None."""
     matches = sorted(dest_dir.glob(f"tl_*_{fips}_addrfeat.shp"))
     if len(matches) > 1:
         names = ", ".join(p.name for p in matches)

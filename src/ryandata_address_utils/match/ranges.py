@@ -56,6 +56,7 @@ def addrfeat_range_field_names(
 
 
 def _pair_covers(num: str, start: object, end: object) -> bool:
+    """Inclusive house containment with even/odd parity when both ends agree."""
     n = house_int(num)
     lo = house_int(start)
     hi = house_int(end)
@@ -80,12 +81,14 @@ def house_in_addrfeat_range(
 
 
 def _house_int_series(values: Any) -> Any:
+    """Vectorized first digit run; non-numeric values become NA."""
     pd = require_pandas()
     digits = as_str_series(values).str.extract(r"(\d+)", expand=False)
     return pd.to_numeric(digits, errors="coerce")
 
 
 def _pair_covers_series(num: Any, start: Any, end: Any) -> Any:
+    """Vectorized :func:`_pair_covers` for ADDRFEAT from/to columns."""
     n = _house_int_series(num)
     lo_raw = _house_int_series(start)
     hi_raw = _house_int_series(end)

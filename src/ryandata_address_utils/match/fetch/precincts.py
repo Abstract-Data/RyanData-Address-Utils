@@ -27,14 +27,17 @@ def parse_election_precinct_filename(name: str) -> tuple[int, str] | None:
 
 
 def staged_precinct_filename(year: int, kind: str) -> str:
+    """On-disk shapefile name: ``Precincts26P.shp`` from year and P/G kind."""
     return f"Precincts{year % 100:02d}{kind.upper()}.shp"
 
 
 def _rank_key(year: int, kind: str) -> tuple[int, int]:
+    """Sort key: newer year first; general (G) beats primary (P) in a year."""
     return year, 1 if kind.upper() == "G" else 0
 
 
 def parse_tlc_precinct_resource(name: str, fmt: str) -> tuple[int, str, str] | None:
+    """Classify a CKAN resource as shapefile, districts workbook, or skip."""
     parsed = parse_election_precinct_filename(name)
     if parsed is None:
         return None

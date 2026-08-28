@@ -19,6 +19,7 @@ CRS = "EPSG:4326"
 
 
 def require_geopandas() -> Any:
+    """Import geopandas or raise an install hint for the extra."""
     try:
         import geopandas as gpd  # ty: ignore[unresolved-import]
     except ImportError as exc:

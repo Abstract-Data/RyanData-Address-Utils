@@ -27,6 +27,7 @@ class AddressPointCollection:
 
     @property
     def vintage(self) -> str:
+        """Acquisition year as a four-digit string."""
         return str(self.acquisition_date.year)
 
 
@@ -41,15 +42,18 @@ class AddressPointResource:
 
     @property
     def fips(self) -> str:
+        """County FIPS parsed from the Address Points ZIP filename."""
         match = _FIPS_IN_FILENAME.search(self.url)
         return match.group(1) if match else ""
 
     @property
     def filename(self) -> str:
+        """Last path segment of the download URL."""
         return self.url.rsplit("/", 1)[-1]
 
 
 def _parse_acquisition_date(raw: str | None) -> date:
+    """Parse ``YYYY-MM-DD``; missing or malformed dates sort as oldest."""
     if not raw:
         return date.min
     try:
@@ -59,6 +63,7 @@ def _parse_acquisition_date(raw: str | None) -> date:
 
 
 def list_collections(*, opener: Opener | None = None) -> list[AddressPointCollection]:
+    """Address Points collections, newest acquisition date first."""
     payload = json_get(COLLECTIONS_CATALOG_URL, params={"limit": 3000, "offset": 0}, opener=opener)
     collections: list[AddressPointCollection] = []
     for record in payload.get("results", []):
@@ -76,6 +81,7 @@ def list_collections(*, opener: Opener | None = None) -> list[AddressPointCollec
 
 
 def resolve_latest_collection(*, opener: Opener | None = None) -> AddressPointCollection:
+    """Newest Address Points vintage in the TNRIS catalog."""
     collections = list_collections(opener=opener)
     if not collections:
         raise RuntimeError(f"No '{COLLECTION_NAME}' collection at {COLLECTIONS_CATALOG_URL}")
@@ -88,6 +94,7 @@ def list_resources(
     include_statewide: bool = False,
     opener: Opener | None = None,
 ) -> list[AddressPointResource]:
+    """County Address Points ZIPs for one collection. Statewide ZIP is skipped."""
     payload = json_get(RESOURCES_URL, params={"collection_id": collection_id}, opener=opener)
     resources: list[AddressPointResource] = []
     for record in payload.get("results", []):

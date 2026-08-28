@@ -122,6 +122,7 @@ def drop_direction_key(
 
 
 def _is_directional_token(token: str) -> bool:
+    """True when ``token`` is a directional word or USPS abbreviation."""
     return token in DIRECTIONALS or token in _DIRECTIONAL_ABBREVS
 
 

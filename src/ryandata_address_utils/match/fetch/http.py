@@ -24,6 +24,7 @@ def make_request(url: str) -> urllib.request.Request:
 
 
 def _open(url: str, *, opener: Opener | None) -> Any:
+    """Open ``url`` with the injected opener, or stdlib ``urlopen``."""
     open_fn = opener or urllib.request.urlopen
     return open_fn(make_request(url))
 
