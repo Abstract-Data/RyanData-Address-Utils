@@ -75,8 +75,13 @@ def load_voterfile(
     for col in frame.columns:
         frame[col] = frame[col].astype(str).str.strip().str.upper()
     if counties is not None and "COUNTY" in frame.columns:
-        names = {c.upper().replace("_", " ") for c in counties}
-        frame = frame.loc[frame["COUNTY"].isin(names)]
+        wanted_fips = {
+            fips
+            for county in counties
+            if (fips := county_fips_from_name(county.replace("_", " "))) is not None
+        }
+        row_fips = frame["COUNTY"].map(county_fips_from_name)
+        frame = frame.loc[row_fips.isin(wanted_fips)]
     return frame.reset_index(drop=True)
 
 

@@ -16,6 +16,7 @@ USER_AGENT = (
 )
 
 Opener = Callable[..., Any]
+HTTP_TIMEOUT_SECONDS = 30.0
 
 
 def make_request(url: str) -> urllib.request.Request:
@@ -25,8 +26,10 @@ def make_request(url: str) -> urllib.request.Request:
 
 def _open(url: str, *, opener: Opener | None) -> Any:
     """Open ``url`` with the injected opener, or stdlib ``urlopen``."""
-    open_fn = opener or urllib.request.urlopen
-    return open_fn(make_request(url))
+    request = make_request(url)
+    if opener is not None:
+        return opener(request)
+    return urllib.request.urlopen(request, timeout=HTTP_TIMEOUT_SECONDS)
 
 
 def json_get(
@@ -53,7 +56,7 @@ def download_file(
     """Stream ``url`` to ``dest``. Skip when size already matches ``expected_size``."""
     dest = Path(dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
-    if dest.exists() and not force and (not expected_size or dest.stat().st_size == expected_size):
+    if dest.exists() and not force and expected_size > 0 and dest.stat().st_size == expected_size:
         return dest
     part = dest.with_suffix(dest.suffix + ".part")
     try:

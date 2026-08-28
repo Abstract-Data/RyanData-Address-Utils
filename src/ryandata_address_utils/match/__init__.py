@@ -1,7 +1,9 @@
 """Drop-direction uniqueness and TIGER ADDRFEAT range matching.
 
 Callers may supply ``pct`` on each row, or run ``uniqueness --voterfile`` which
-fetches TxGIO / TIGER ADDRFEAT / TLC precincts and attaches precincts via PIP.
+fetches TLC precincts and the selected address sources (TxGIO by default). Pass
+``--sources txgio,tiger`` to fetch both TxGIO and TIGER ADDRFEAT. Precincts are
+attached via PIP.
 
 DataFrame helpers require the ``[pandas]`` extra::
 

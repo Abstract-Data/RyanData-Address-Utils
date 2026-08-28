@@ -41,6 +41,18 @@ def test_counties_filter(tmp_path: Path) -> None:
     assert raw["COUNTY"].tolist() == ["TRAVIS"]
 
 
+def test_counties_filter_matches_equivalent_county_spellings(tmp_path: Path) -> None:
+    path = tmp_path / "vf.csv"
+    path.write_text(
+        "COUNTY,PCT,RHNUM,RSTNAME,RSTTYPE\nDE WITT,1,1,MAIN,ST\nTRAVIS,2,2,OAK,AVE\n",
+        encoding="utf-8",
+    )
+
+    raw = load_voterfile(path, counties=("DE-WITT",))
+
+    assert raw["COUNTY"].tolist() == ["DE WITT"]
+
+
 def test_component_street_key_drops_punctuation() -> None:
     assert component_street_key("Main", "St.") == "MAIN ST"
     assert component_street_key("", None) == ""

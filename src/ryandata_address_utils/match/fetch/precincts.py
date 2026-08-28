@@ -118,8 +118,10 @@ def fetch_tx_precincts(
             raise FileNotFoundError(f"{zip_path} contained no .shp")
         src = next(
             (s for s in shps if parse_election_precinct_filename(s.name) == (year, kind)),
-            shps[0],
+            None,
         )
+        if src is None:
+            raise FileNotFoundError(f"{zip_path} contained no {target.name}")
         for sibling in src.parent.iterdir():
             if sibling.is_file() and sibling.stem == src.stem:
                 shutil.copy2(sibling, dest / f"{target.stem}{sibling.suffix}")

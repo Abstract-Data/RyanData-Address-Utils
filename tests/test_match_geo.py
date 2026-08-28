@@ -207,3 +207,35 @@ def test_load_tiger_ranges_without_fullname(
     out = geo.load_tiger_ranges(tmp_path / "tl.shp", "48001", tmp_path / "p.shp")
     assert out["pct"].tolist() == ["1"]
     assert "lfrom" in out.columns
+
+
+def test_load_tiger_ranges_resolves_each_county_from_shared_directory(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    tiger_dir = tmp_path / "tiger"
+    tiger_dir.mkdir()
+    anderson = tiger_dir / "tl_2025_48001_addrfeat.shp"
+    andrews = tiger_dir / "tl_2025_48003_addrfeat.shp"
+    anderson.touch()
+    andrews.touch()
+
+    gdf = MagicMock()
+    gdf.crs = None
+    gdf.columns = ["FULLNAME", "LFROMHN", "LTOHN", "RFROMHN", "RTOHN"]
+    gdf.__contains__.side_effect = lambda key: key in gdf.columns
+    gdf.__len__.return_value = 1
+    gdf.__getitem__.side_effect = lambda key: pd.Series(
+        ["E MAIN ST"] if key == "FULLNAME" else ["100"]
+    )
+    gdf.geometry = SimpleNamespace(centroid=SimpleNamespace(x=pd.Series([0.0]), y=pd.Series([0.0])))
+    gpd = MagicMock()
+    gpd.read_file.return_value = gdf
+    monkeypatch.setattr(geo, "require_geopandas", lambda: gpd)
+    monkeypatch.setattr(geo, "attach_precincts", lambda frame, path, **kwargs: frame)
+
+    first = geo.load_tiger_ranges(tiger_dir, "48001", tmp_path / "precincts.shp")
+    second = geo.load_tiger_ranges(tiger_dir, "48003", tmp_path / "precincts.shp")
+
+    assert [call.args[0] for call in gpd.read_file.call_args_list] == [anderson, andrews]
+    assert first["county"].tolist() == ["48001"]
+    assert second["county"].tolist() == ["48003"]

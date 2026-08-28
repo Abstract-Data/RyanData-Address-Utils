@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 
+from ryandata_address_utils.match.fetch import http as http_helpers
 from ryandata_address_utils.match.fetch.http import USER_AGENT, download_file, http_status
 from ryandata_address_utils.match.fetch.precincts import (
     fetch_tx_precincts,
@@ -73,6 +74,7 @@ class TestTexasFips:
 
     def test_de_witt_alias(self) -> None:
         assert county_fips_from_name("DE WITT") == county_fips_from_name("DEWITT")
+        assert county_fips_from_name("DE-WITT") == county_fips_from_name("DEWITT")
 
     def test_blank_is_none_and_spaced_mc_collapses(self) -> None:
         assert county_fips_from_name(None) is None
@@ -152,6 +154,42 @@ class TestDownloadSkip:
         assert out.read_bytes() == b"abc"
         assert calls == []
 
+    def test_unknown_size_is_redownloaded(self, tmp_path: Path) -> None:
+        dest = tmp_path / "file.zip"
+        dest.write_bytes(b"stale")
+
+        out = download_file(
+            "https://example/file.zip", dest, opener=_opener({"https://example/file.zip": b"new"})
+        )
+
+        assert out.read_bytes() == b"new"
+
+
+class TestOpen:
+    def test_stdlib_urlopen_receives_finite_timeout(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        seen: dict[str, object] = {}
+
+        def urlopen(request: object, *, timeout: float) -> _BytesResponse:
+            seen["request"] = request
+            seen["timeout"] = timeout
+            return _BytesResponse(b"")
+
+        monkeypatch.setattr(http_helpers.urllib.request, "urlopen", urlopen)
+        http_helpers._open("https://example/file", opener=None)
+
+        assert seen["timeout"] == http_helpers.HTTP_TIMEOUT_SECONDS
+        assert float(seen["timeout"]) > 0
+
+    def test_injected_opener_still_receives_only_request(self) -> None:
+        calls: list[object] = []
+
+        def opener(request: object) -> _BytesResponse:
+            calls.append(request)
+            return _BytesResponse(b"")
+
+        http_helpers._open("https://example/file", opener=opener)
+        assert len(calls) == 1
+
 
 class TestTigerAddrfeat:
     def test_url_uses_five_digit_fips(self) -> None:
@@ -221,6 +259,24 @@ class TestTigerAddrfeat:
     def test_empty_year_list_fails_without_http(self, tmp_path: Path) -> None:
         with pytest.raises(FileNotFoundError, match="No ADDRFEAT"):
             fetch_addrfeat("48001", tmp_path, years=(), opener=_opener({}))
+
+    def test_force_replaces_prior_vintage_sidecars(self, tmp_path: Path) -> None:
+        old_stem = "tl_2024_48001_addrfeat"
+        (tmp_path / f"{old_stem}.shp").write_bytes(b"old shp")
+        (tmp_path / f"{old_stem}.dbf").write_bytes(b"old dbf")
+        url = "https://www2.census.gov/geo/tiger/TIGER2025/ADDRFEAT/tl_2025_48001_addrfeat.zip"
+
+        shp = fetch_addrfeat(
+            "48001",
+            tmp_path,
+            years=(2025,),
+            force=True,
+            opener=_opener({url: _tiny_shp_zip("tl_2025_48001_addrfeat")}),
+        )
+
+        assert shp.name == "tl_2025_48001_addrfeat.shp"
+        assert not (tmp_path / f"{old_stem}.shp").exists()
+        assert not (tmp_path / f"{old_stem}.dbf").exists()
 
 
 class TestHttpStatus:
@@ -419,6 +475,17 @@ class TestFetchPrecincts:
             lambda *a, **k: None,
         )
         with pytest.raises(FileNotFoundError, match="Failed to stage"):
+            fetch_tx_precincts(tmp_path, opener=opener)
+
+    def test_zip_with_only_unrelated_shapefile_fails(self, tmp_path: Path) -> None:
+        url = "https://example/Precincts26P.zip"
+        opener = self._ckan(
+            [{"name": "Precincts26P.zip", "format": "ZIP", "url": url}],
+            zip_url=url,
+            zip_bytes=_tiny_shp_zip("Precincts24G"),
+        )
+
+        with pytest.raises(FileNotFoundError, match="contained no Precincts26P.shp"):
             fetch_tx_precincts(tmp_path, opener=opener)
 
 

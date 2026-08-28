@@ -25,6 +25,13 @@ def _existing_shp(dest_dir: Path, fips: str) -> Path | None:
     return matches[0] if matches else None
 
 
+def _remove_addrfeat_sidecars(dest_dir: Path, fips: str) -> None:
+    """Remove extracted ADDRFEAT files for ``fips`` while retaining ZIP caches."""
+    for path in dest_dir.glob(f"tl_*_{fips}_addrfeat.*"):
+        if path.is_file() and path.suffix.lower() != ".zip":
+            path.unlink()
+
+
 def fetch_addrfeat(
     fips: str,
     dest_dir: Path,
@@ -51,6 +58,8 @@ def fetch_addrfeat(
                 last_error = exc
                 continue
             raise
+        if force:
+            _remove_addrfeat_sidecars(dest_dir, fips)
         with zipfile.ZipFile(zip_path) as archive:
             archive.extractall(dest_dir)
         shp = _existing_shp(dest_dir, fips)

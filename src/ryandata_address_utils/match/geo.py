@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from ryandata_address_utils.match.fetch.tiger import _existing_shp
 from ryandata_address_utils.match.keys import (
     as_str_series,
     canon_dir_series,
@@ -119,7 +120,13 @@ def load_tiger_ranges(shp: Path, fips: str, precincts_path: Path) -> Any:
     """Read one ADDRFEAT shapefile, attach precinct on centroids."""
     gpd = require_geopandas()
     pd = require_pandas()
-    gdf = gpd.read_file(shp)
+    shp_path = Path(shp)
+    if shp_path.is_dir():
+        resolved = _existing_shp(shp_path, fips)
+        if resolved is None:
+            raise FileNotFoundError(f"No ADDRFEAT shapefile for {fips} in {shp_path}")
+        shp_path = resolved
+    gdf = gpd.read_file(shp_path)
     if gdf.crs is not None and str(gdf.crs) != CRS:
         gdf = gdf.to_crs(CRS)
     cents = gdf.geometry.centroid

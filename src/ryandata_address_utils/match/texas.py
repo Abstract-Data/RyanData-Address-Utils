@@ -33,6 +33,8 @@ findings. The values below come from the TIGER/Line county layer.
 
 from __future__ import annotations
 
+import re
+
 __all__ = ["TEXAS_COUNTY_FIPS", "county_fips_from_name", "normalize_county_name"]
 
 #: Upper-cased county name -> 5-digit FIPS, from TIGER/Line. All 254 Texas counties.
@@ -302,7 +304,7 @@ def normalize_county_name(name: str | None) -> str:
     """
     if name is None:
         return ""
-    return " ".join(str(name).upper().replace(".", " ").split())
+    return " ".join(re.sub(r"[^A-Z0-9]", " ", str(name).upper()).split())
 
 
 #: Names that differ between the voter file and TIGER by more than case or spacing.
