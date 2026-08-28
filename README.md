@@ -81,6 +81,27 @@ parsed = service.parse_dataframe(df, "address", prefix="addr_")
 print(parsed[["addr_AddressNumber", "addr_StreetName", "addr_ZipCode"]])
 ```
 
+## Drop-direction uniqueness (pandas extra)
+
+Match rows after dropping street direction, keyed on number + name + type + county + precinct. Keys with two or more distinct directionals (blank counts as a state; `EAST` and `E` collapse) are refused. Callers supply `pct` — this package does not attach precincts.
+
+TIGER ADDRFEAT ranges use inclusive house containment and even/odd side parity. TIGER 2024 `LFROMADD` and 2025 `LFROMHN` both resolve.
+
+```python
+from ryandata_address_utils.match import (
+    MATCH,
+    EXCLUDED_PROBLEM,
+    UNMATCHED,
+    match_drop_direction,
+    match_addrfeat_ranges,
+)
+
+voters["outcome"] = match_drop_direction(voters, points)
+voters["tiger_outcome"] = match_addrfeat_ranges(voters, addrfeat_ranges)
+```
+
+Requires `ryandata-address-utils[pandas]`. Import from `ryandata_address_utils.match`, not the top-level package.
+
 ## Programmatic build
 
 ```python
@@ -134,6 +155,7 @@ flowchart LR
 - Builder: `AddressBuilder` for programmatic address construction
 - Audit trail: `ProcessLog`, `ProcessEntry` for tracking transformations
 - Validation base: `ValidationBase`, `RyanDataValidationBase` for model mixins
+- Drop-direction match: `ryandata_address_utils.match` (`match_drop_direction`, `match_addrfeat_ranges`) — pandas extra, callers supply `pct`
 
 ## Documentation
 

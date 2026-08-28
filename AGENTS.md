@@ -50,6 +50,7 @@ This document provides context for AI coding assistants (Claude, GPT, Copilot, C
 | `src/ryandata_address_utils/validation/` | Validators (ZIP, state, composite) |
 | `src/ryandata_address_utils/data/` | Data sources (CSV-backed ZIP database) |
 | `src/ryandata_address_utils/core/` | Shared utilities (formatters, tracking, errors) |
+| `src/ryandata_address_utils/match/` | Drop-direction uniqueness + ADDRFEAT range match (pandas extra; not AddressService) |
 
 ---
 
@@ -133,6 +134,17 @@ class MyValidator:
 1. Add field to `models/address.py` with proper `Field()` definition
 2. Add to `ADDRESS_FIELDS` enum if needed for iteration
 3. Update `AddressFormatter` if field affects full address computation
+
+### Drop-direction uniqueness
+
+Do not fold matching into `AddressService`. Import from the submodule and require the pandas extra for DataFrame helpers. Callers supply `pct`; v1 does not attach precincts.
+
+```python
+from ryandata_address_utils.match import match_drop_direction, match_addrfeat_ranges
+
+voters["outcome"] = match_drop_direction(voters, points)
+voters["tiger_outcome"] = match_addrfeat_ranges(voters, addrfeat_ranges)
+```
 
 ### Working with Pandas
 

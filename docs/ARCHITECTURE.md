@@ -66,6 +66,11 @@ ryandata_address_utils/
 ├── service.py               # AddressService (main facade)
 ├── protocols.py             # Protocol definitions (interfaces)
 ├── pandas_ext.py            # Pandas DataFrame integration
+├── match/                   # Drop-direction uniqueness + ADDRFEAT ranges
+│   ├── __init__.py          # MATCH / EXCLUDED_PROBLEM / UNMATCHED exports
+│   ├── keys.py              # canon_dir, precinct, FULLNAME nodir key
+│   ├── uniqueness.py        # classify_problem_keys, match_drop_direction
+│   └── ranges.py            # house_in_addrfeat_range, match_addrfeat_ranges
 ├── setup_cli.py             # CLI for libpostal setup
 │
 ├── core/                    # Reusable utilities (SOLID extracted)
