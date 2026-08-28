@@ -81,26 +81,34 @@ parsed = service.parse_dataframe(df, "address", prefix="addr_")
 print(parsed[["addr_AddressNumber", "addr_StreetName", "addr_ZipCode"]])
 ```
 
-## Drop-direction uniqueness (pandas extra)
+## Drop-direction uniqueness
 
-Match rows after dropping street direction, keyed on number + name + type + county + precinct. Keys with two or more distinct directionals (blank counts as a state; `EAST` and `E` collapse) are refused. Callers supply `pct` — this package does not attach precincts.
+Match rows after dropping street direction, keyed on number + name + type + county + precinct. Keys with two or more distinct directionals (blank counts as a state; `EAST` and `E` collapse) are refused.
 
-TIGER ADDRFEAT ranges use inclusive house containment and even/odd side parity. TIGER 2024 `LFROMADD` and 2025 `LFROMHN` both resolve.
+Derek Ryan's one-liner: a Texas SOS voter extract and which universes to run. The CLI fetches TxGIO address points, TIGER ADDRFEAT, and TLC precinct polygons into `~/.cache/ryandata-address-utils` when they are missing.
+
+```bash
+uv sync --extra pandas
+# shapefile readers / point-in-polygon:
+uv add geopandas
+uv run ryandata-address-utils-setup uniqueness \
+  --voterfile ~/path/to/texas.csv \
+  --sources txgio,tiger \
+  --out uniqueness_out
+```
+
+`--sources` is `txgio`, `tiger`, or both. Counties default to every `COUNTY` on the voter file. Writes `outcomes.csv` and `summary.json`.
+
+Library use when you already have `pct`:
 
 ```python
-from ryandata_address_utils.match import (
-    MATCH,
-    EXCLUDED_PROBLEM,
-    UNMATCHED,
-    match_drop_direction,
-    match_addrfeat_ranges,
-)
+from ryandata_address_utils.match import match_drop_direction, match_addrfeat_ranges
 
 voters["outcome"] = match_drop_direction(voters, points)
 voters["tiger_outcome"] = match_addrfeat_ranges(voters, addrfeat_ranges)
 ```
 
-Requires `ryandata-address-utils[pandas]`. Import from `ryandata_address_utils.match`, not the top-level package.
+TIGER ADDRFEAT ranges use inclusive house containment and even/odd side parity. TIGER 2024 `LFROMADD` and 2025 `LFROMHN` both resolve. Import from `ryandata_address_utils.match`, not the top-level package.
 
 ## Programmatic build
 
@@ -155,7 +163,7 @@ flowchart LR
 - Builder: `AddressBuilder` for programmatic address construction
 - Audit trail: `ProcessLog`, `ProcessEntry` for tracking transformations
 - Validation base: `ValidationBase`, `RyanDataValidationBase` for model mixins
-- Drop-direction match: `ryandata_address_utils.match` (`match_drop_direction`, `match_addrfeat_ranges`) — pandas extra, callers supply `pct`
+- Drop-direction match: `ryandata_address_utils.match` plus `uniqueness --voterfile --sources txgio,tiger` (fetches TxGIO, TIGER ADDRFEAT, TLC precincts)
 
 ## Documentation
 

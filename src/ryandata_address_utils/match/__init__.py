@@ -1,7 +1,7 @@
 """Drop-direction uniqueness and TIGER ADDRFEAT range matching.
 
-Callers supply a precinct on each row. This package does not attach precincts
-via point-in-polygon.
+Callers may supply ``pct`` on each row, or run ``uniqueness --voterfile`` which
+fetches TxGIO / TIGER ADDRFEAT / TLC precincts and attaches precincts via PIP.
 
 DataFrame helpers require the ``[pandas]`` extra::
 

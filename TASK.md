@@ -1,45 +1,46 @@
-# TASK: Drop-direction uniqueness + ADDRFEAT range matcher
+# TASK: Drop-direction uniqueness + ADDRFEAT matcher + shapefile fetch/CLI
 
 GitHub issue: Abstract-Data/RyanData-Address-Utils#22
-Branch: `feat/drop-direction-uniqueness` from `origin/main` (3d14fba)
+PR: Abstract-Data/RyanData-Address-Utils#23
+Branch: `feat/drop-direction-uniqueness`
 
-Extract Derek Ryan's uniqueness rule and TIGER ADDRFEAT house-range matching into `ryandata_address_utils.match` so the public parser package can do what the private voterfile-audit-pipeline compare script proved.
+Derek Ryan should only need a voter-file path and `--sources txgio`, `tiger`, or both. The package fetches TxGIO address points, TIGER ADDRFEAT, and TLC precinct polygons into a cache, attaches precincts, and writes uniqueness outcomes.
 
 ## Files in scope
 
-- Create: `src/ryandata_address_utils/match/__init__.py`
-- Create: `src/ryandata_address_utils/match/keys.py`
-- Create: `src/ryandata_address_utils/match/uniqueness.py`
-- Create: `src/ryandata_address_utils/match/ranges.py`
-- Create: `tests/test_match_keys.py`
-- Create: `tests/test_match_uniqueness.py`
-- Create: `tests/test_match_ranges.py`
-- Create: `docs/plans/2026-08-28-drop-direction-uniqueness.md`
-- Modify: `README.md`, `docs/ARCHITECTURE.md`, `AGENTS.md`
+- Keep: `src/ryandata_address_utils/match/{__init__,keys,uniqueness,ranges}.py`
+- Create: `src/ryandata_address_utils/match/texas.py`
+- Create: `src/ryandata_address_utils/match/fetch/{__init__,http,txgio,tiger,precincts}.py`
+- Create: `src/ryandata_address_utils/match/{voters,geo,run,cli}.py`
+- Create: `tests/test_match_{fetch,voters,run,cli}.py`
+- Modify: `src/ryandata_address_utils/setup_cli.py`, `pyproject.toml`, `README.md`, `docs/ARCHITECTURE.md`, `AGENTS.md`
 
-## Behavior to preserve / ship
+## Behavior to ship
 
-- Directionless key: number + name + type + county + pct (unit optional)
-- Problem-key refusal: 2+ distinct canonical directionals on that key, **blank is a state**, `EAST`/`E` collapse
-- Callers supply `pct` — v1 does **not** attach precincts (no geopandas, no `[geo]` extra)
-- ADDRFEAT: inclusive house containment, even/odd side parity, TIGER 2024 `LFROMADD` and 2025 `LFROMHN` (2024 names win if both present)
-- Outcomes: `match` | `excluded_problem` | `unmatched`
-- Pandas extra for DataFrame helpers; scalar helpers import without pandas
-- Do **not** fold into `AddressService`
-- Do **not** submodule voterfile-audit-pipeline
-- Do **not** add pandas/geopandas/polars as a hard dependency
+- CLI: `ryandata-address-utils-setup uniqueness --voterfile PATH --sources txgio,tiger`
+- Sources: `txgio`, `tiger`, or both. Unknown tokens fail loud.
+- Counties default to those present on the voter file
+- Fetch-if-missing into `~/.cache/ryandata-address-utils` (overridable)
+- TxGIO: newest Address Points vintage from api.tnris.org; skip statewide ZIP; WAF UA starts with `Mozilla/5.0`
+- TIGER ADDRFEAT only (not CD/SLDL/VTD); `tl_{year}_{fips}_addrfeat.zip`; try 2025 then 2024 on 404
+- TLC precincts: newest Precincts##P/G via CKAN `package_show?id=precincts`
+- PIP precinct onto TxGIO points and ADDRFEAT centroids (`[geo]` extra)
+- Outcomes columns `txgio_outcome` / `tiger_outcome`
+- No hard pandas/geopandas/httpx/polars dependency
+- Do not submodule voterfile-audit-pipeline
+- Do not fold into AddressService
 
 ## Checks
 
-- `uv run pytest tests/test_match_keys.py tests/test_match_uniqueness.py tests/test_match_ranges.py tests/test_pandas_utils.py -q`
-- `uv run ruff check src/ryandata_address_utils/match tests/test_match_keys.py tests/test_match_uniqueness.py tests/test_match_ranges.py`
-- `uv run ruff format --check src/ryandata_address_utils/match tests/test_match_keys.py tests/test_match_uniqueness.py tests/test_match_ranges.py`
-- `uv run ty check src/ryandata_address_utils/match`
+- `uv run pytest tests/test_match_*.py -q`
+- `uv run ruff check src/ryandata_address_utils/match tests/test_match_*.py src/ryandata_address_utils/setup_cli.py`
+- `uv run ruff format --check` on those files
+- `uv run ty check src/ryandata_address_utils/match src/ryandata_address_utils/setup_cli.py`
 
 ## Evidence before done
 
-- E+W same key is a problem; EAST+E is not; blank vs E is a problem
-- Even house does not match an odd-only ADDRFEAT side
-- 2024 vs 2025 range field names resolve correctly
-- Unique covering range → `match`; two dirs covering the same house → `excluded_problem`
-- PR open against `Abstract-Data/RyanData-Address-Utils` `main`, closes #22
+- Newest TxGIO vintage wins; statewide ZIP excluded
+- ADDRFEAT URL uses 5-digit FIPS; year fallback 2025→2024
+- Precinct rank: 26P over 24G
+- CLI uniqueness with mocked fetchers writes outcomes for `--sources txgio,tiger`
+- PR #23 updated

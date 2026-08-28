@@ -137,13 +137,10 @@ class MyValidator:
 
 ### Drop-direction uniqueness
 
-Do not fold matching into `AddressService`. Import from the submodule and require the pandas extra for DataFrame helpers. Callers supply `pct`; v1 does not attach precincts.
+Do not fold matching into `AddressService`. Import from the submodule. The uniqueness CLI fetches TxGIO / TIGER ADDRFEAT / TLC precincts and attaches `pct` via PIP (needs geopandas). DataFrame helpers need pandas.
 
-```python
-from ryandata_address_utils.match import match_drop_direction, match_addrfeat_ranges
-
-voters["outcome"] = match_drop_direction(voters, points)
-voters["tiger_outcome"] = match_addrfeat_ranges(voters, addrfeat_ranges)
+```bash
+uv run ryandata-address-utils-setup uniqueness --voterfile FILE --sources txgio,tiger
 ```
 
 ### Working with Pandas

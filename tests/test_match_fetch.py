@@ -1,0 +1,322 @@
+"""Shapefile downloaders for uniqueness (issue #22). Network is mocked."""
+
+from __future__ import annotations
+
+import json
+import urllib.error
+import zipfile
+from pathlib import Path
+
+import pytest
+
+from ryandata_address_utils.match.fetch.http import USER_AGENT, download_file, http_status
+from ryandata_address_utils.match.fetch.precincts import (
+    fetch_tx_precincts,
+    parse_election_precinct_filename,
+    rank_tlc_precinct_resources,
+    staged_precinct_filename,
+)
+from ryandata_address_utils.match.fetch.tiger import (
+    addrfeat_url,
+    fetch_addrfeat,
+    fetch_tiger_counties,
+)
+from ryandata_address_utils.match.fetch.txgio import (
+    fetch_txgio_counties,
+    list_resources,
+    resolve_latest_collection,
+)
+from ryandata_address_utils.match.texas import county_fips_from_name
+
+
+class _BytesResponse:
+    def __init__(self, data: bytes) -> None:
+        self._data = data
+
+    def read(self, n: int = -1) -> bytes:
+        if n < 0:
+            out, self._data = self._data, b""
+            return out
+        out, self._data = self._data[:n], self._data[n:]
+        return out
+
+    def __enter__(self) -> _BytesResponse:
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        return None
+
+
+def _opener(payloads: dict[str, bytes], *, missing: int = 404):
+    def opener(req: object, timeout: object = None) -> _BytesResponse:
+        url = getattr(req, "full_url", str(req))
+        if url not in payloads:
+            raise urllib.error.HTTPError(url, missing, "not found", hdrs={}, fp=None)
+        return _BytesResponse(payloads[url])
+
+    return opener
+
+
+class TestUserAgent:
+    def test_starts_with_mozilla_and_names_this_package(self) -> None:
+        assert USER_AGENT.startswith("Mozilla/5.0")
+        assert "ryandata-address-utils" in USER_AGENT
+        assert "Chrome" not in USER_AGENT
+
+
+class TestTexasFips:
+    def test_mclennan_is_not_the_arithmetic_rule(self) -> None:
+        assert county_fips_from_name("MCLENNAN") == "48309"
+        assert county_fips_from_name("MADISON") == "48313"
+
+    def test_de_witt_alias(self) -> None:
+        assert county_fips_from_name("DE WITT") == county_fips_from_name("DEWITT")
+
+    def test_blank_is_none_and_spaced_mc_collapses(self) -> None:
+        assert county_fips_from_name(None) is None
+        assert county_fips_from_name("") is None
+        assert county_fips_from_name("MC CULLOCH") == "48307"
+
+
+class TestTxgioCatalog:
+    def test_newest_vintage_wins(self) -> None:
+        payload = {
+            "results": [
+                {
+                    "collection_id": "old",
+                    "name": "Address Points",
+                    "acquisition_date": "2024-02-01",
+                },
+                {
+                    "collection_id": "new",
+                    "name": "Address Points",
+                    "acquisition_date": "2026-03-18",
+                },
+                {
+                    "collection_id": "lidar",
+                    "name": "Lidar",
+                    "acquisition_date": "2027-01-01",
+                },
+            ]
+        }
+        catalog = "https://api.tnris.org/api/v1/collections_catalog?limit=3000&offset=0"
+        opener = _opener({catalog: json.dumps(payload).encode()})
+        latest = resolve_latest_collection(opener=opener)
+        assert latest.collection_id == "new"
+        assert latest.vintage == "2026"
+
+    def test_statewide_rollup_is_excluded(self) -> None:
+        payload = {
+            "results": [
+                {
+                    "resource_id": "c",
+                    "resource": "https://cdn.example/stratmap-2026-address-points_48001_ap.zip",
+                    "filesize": 10,
+                    "area_type_name": "Anderson",
+                    "area_type": "county",
+                },
+                {
+                    "resource_id": "s",
+                    "resource": "https://cdn.example/stratmap-2026-address-points_48_ap.zip",
+                    "filesize": 99,
+                    "area_type_name": "Texas",
+                    "area_type": "state",
+                },
+            ]
+        }
+        opener = _opener(
+            {
+                "https://api.tnris.org/api/v1/resources?collection_id=new": (
+                    json.dumps(payload).encode()
+                ),
+            }
+        )
+        resources = list_resources("new", opener=opener)
+        assert len(resources) == 1
+        assert resources[0].fips == "48001"
+
+
+class TestDownloadSkip:
+    def test_matching_size_is_not_redownloaded(self, tmp_path: Path) -> None:
+        dest = tmp_path / "file.zip"
+        dest.write_bytes(b"abc")
+        calls: list[str] = []
+
+        def opener(req: object, timeout: object = None) -> _BytesResponse:
+            calls.append("hit")
+            return _BytesResponse(b"zzzz")
+
+        out = download_file("https://example/file.zip", dest, expected_size=3, opener=opener)
+        assert out.read_bytes() == b"abc"
+        assert calls == []
+
+
+class TestTigerAddrfeat:
+    def test_url_uses_five_digit_fips(self) -> None:
+        assert addrfeat_url("48201", 2025) == (
+            "https://www2.census.gov/geo/tiger/TIGER2025/ADDRFEAT/tl_2025_48201_addrfeat.zip"
+        )
+
+    def test_falls_back_to_2024_on_404(self, tmp_path: Path) -> None:
+        zip_bytes = _tiny_shp_zip("tl_2024_48001_addrfeat")
+        payloads = {
+            (
+                "https://www2.census.gov/geo/tiger/TIGER2025/ADDRFEAT/tl_2025_48001_addrfeat.zip"
+            ): None,
+            (
+                "https://www2.census.gov/geo/tiger/TIGER2024/ADDRFEAT/tl_2024_48001_addrfeat.zip"
+            ): zip_bytes,
+        }
+
+        def opener(req: object, timeout: object = None) -> _BytesResponse:
+            url = getattr(req, "full_url", str(req))
+            body = payloads.get(url)
+            if body is None:
+                raise urllib.error.HTTPError(url, 404, "not found", hdrs={}, fp=None)
+            return _BytesResponse(body)
+
+        shp = fetch_addrfeat("48001", tmp_path, years=(2025, 2024), opener=opener)
+        assert shp.name == "tl_2024_48001_addrfeat.shp"
+        assert shp.exists()
+
+
+class TestHttpStatus:
+    def test_http_error_code(self) -> None:
+        err = urllib.error.HTTPError("http://x", 404, "no", hdrs={}, fp=None)
+        assert http_status(err) == 404
+        assert http_status(ValueError("nope")) is None
+
+
+class TestTlcRank:
+    def test_26p_beats_24g(self) -> None:
+        pick = rank_tlc_precinct_resources(
+            [
+                {"name": "Precincts24G.zip", "format": "ZIP", "url": "http://old"},
+                {"name": "Precincts26P.zip", "format": "SHP", "url": "http://new"},
+            ]
+        )
+        assert pick is not None
+        assert pick["shp"]["year"] == 2026
+        assert pick["shp"]["kind"] == "P"
+
+    def test_filename_helpers(self) -> None:
+        assert parse_election_precinct_filename("Precincts26P.shp") == (2026, "P")
+        assert staged_precinct_filename(2026, "P") == "Precincts26P.shp"
+        assert parse_election_precinct_filename("notes.txt") is None
+
+
+class TestFetchPrecincts:
+    def test_stages_ranked_zip(self, tmp_path: Path) -> None:
+        payload = {
+            "success": True,
+            "result": {
+                "resources": [
+                    {
+                        "name": "Precincts26P.zip",
+                        "format": "ZIP",
+                        "url": "https://example/Precincts26P.zip",
+                    }
+                ]
+            },
+        }
+        zip_bytes = _tiny_shp_zip("Precincts26P")
+        opener = _opener(
+            {
+                "https://data.capitol.texas.gov/api/3/action/package_show?id=precincts": (
+                    json.dumps(payload).encode()
+                ),
+                "https://example/Precincts26P.zip": zip_bytes,
+            }
+        )
+        shp = fetch_tx_precincts(tmp_path, opener=opener)
+        assert shp.name == "Precincts26P.shp"
+        assert shp.exists()
+
+
+class TestFetchTxgioCounties:
+    def test_downloads_matching_fips(self, tmp_path: Path) -> None:
+        catalog = {
+            "results": [
+                {
+                    "collection_id": "new",
+                    "name": "Address Points",
+                    "acquisition_date": "2026-03-18",
+                }
+            ]
+        }
+        resources = {
+            "results": [
+                {
+                    "resource_id": "c",
+                    "resource": "https://cdn.example/stratmap-2026-address-points_48001_ap.zip",
+                    "filesize": 4,
+                    "area_type_name": "Anderson",
+                    "area_type": "county",
+                }
+            ]
+        }
+        opener = _opener(
+            {
+                "https://api.tnris.org/api/v1/collections_catalog?limit=3000&offset=0": (
+                    json.dumps(catalog).encode()
+                ),
+                "https://api.tnris.org/api/v1/resources?collection_id=new": (
+                    json.dumps(resources).encode()
+                ),
+                "https://cdn.example/stratmap-2026-address-points_48001_ap.zip": b"abcd",
+            }
+        )
+        dest = fetch_txgio_counties(("48001",), tmp_path, opener=opener)
+        zips = list(dest.glob("*_48001_ap.zip"))
+        assert zips and zips[0].read_bytes() == b"abcd"
+
+    def test_missing_fips_fails_loud(self, tmp_path: Path) -> None:
+        catalog = {
+            "results": [
+                {
+                    "collection_id": "new",
+                    "name": "Address Points",
+                    "acquisition_date": "2026-03-18",
+                }
+            ]
+        }
+        resources = {"results": []}
+        opener = _opener(
+            {
+                "https://api.tnris.org/api/v1/collections_catalog?limit=3000&offset=0": (
+                    json.dumps(catalog).encode()
+                ),
+                "https://api.tnris.org/api/v1/resources?collection_id=new": (
+                    json.dumps(resources).encode()
+                ),
+            }
+        )
+        with pytest.raises(FileNotFoundError, match="48001"):
+            fetch_txgio_counties(("48001",), tmp_path, opener=opener)
+
+
+class TestFetchTigerCounties:
+    def test_writes_shapefile(self, tmp_path: Path) -> None:
+        zip_bytes = _tiny_shp_zip("tl_2025_48001_addrfeat")
+        opener = _opener(
+            {
+                (
+                    "https://www2.census.gov/geo/tiger/TIGER2025/ADDRFEAT/"
+                    "tl_2025_48001_addrfeat.zip"
+                ): zip_bytes,
+            }
+        )
+        dest = fetch_tiger_counties(("48001",), tmp_path, years=(2025,), opener=opener)
+        assert (dest / "tl_2025_48001_addrfeat.shp").exists()
+
+
+def _tiny_shp_zip(stem: str) -> bytes:
+    from io import BytesIO
+
+    buf = BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr(f"{stem}.shp", b"shp")
+        zf.writestr(f"{stem}.shx", b"shx")
+        zf.writestr(f"{stem}.dbf", b"dbf")
+        zf.writestr(f"{stem}.prj", b"prj")
+    return buf.getvalue()
