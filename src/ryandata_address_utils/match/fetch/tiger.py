@@ -39,13 +39,13 @@ def fetch_addrfeat(
         existing = _existing_shp(dest_dir, fips)
         if existing is not None:
             return existing
-    last_error: BaseException | None = None
+    last_error: Exception | None = None
     for year in years:
         url = addrfeat_url(fips, year)
         zip_path = dest_dir / f"tl_{year}_{fips}_addrfeat.zip"
         try:
             download_file(url, zip_path, force=force, opener=opener)
-        except BaseException as exc:
+        except Exception as exc:
             if http_status(exc) == 404:
                 last_error = exc
                 continue

@@ -155,9 +155,15 @@ def fullname_dir_and_nodir_key(fullname: str) -> tuple[str, str]:
 
 
 def house_int(value: object) -> int | None:
-    """First digit run in a house number, or None."""
-    text = str(value or "").strip()
-    if not text:
+    """First digit run in a house number, or None.
+
+    ``0`` is a real house number. ``None`` is missing. ``pd.NA`` stringifies
+    without a boolean conversion so it does not raise.
+    """
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text or text.casefold() in {"<na>", "nan", "nat", "none"}:
         return None
     match = _HOUSE_DIGITS.search(text)
     if match is None:

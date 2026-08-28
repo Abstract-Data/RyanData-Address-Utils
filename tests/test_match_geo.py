@@ -66,7 +66,7 @@ def test_attach_precincts_joins(monkeypatch: pytest.MonkeyPatch, tmp_path: Path)
 
 
 def test_load_txgio_missing_zip(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    monkeypatch.setattr(geo, "require_geopandas", lambda: MagicMock())
+    monkeypatch.setattr(geo, "require_geopandas", MagicMock())
     out = geo.load_txgio_points(tmp_path, "48001", tmp_path / "p.shp")
     assert list(out.columns) == ["num", "street_key_nodir", "county", "pct", "dir", "lon", "lat"]
     assert out.empty
@@ -78,7 +78,7 @@ def test_load_txgio_zip_without_shp(monkeypatch: pytest.MonkeyPatch, tmp_path: P
     zpath = tmp_path / "x_48001_ap.zip"
     with zipfile.ZipFile(zpath, "w") as zf:
         zf.writestr("readme.txt", "no shp")
-    monkeypatch.setattr(geo, "require_geopandas", lambda: MagicMock())
+    monkeypatch.setattr(geo, "require_geopandas", MagicMock())
     with pytest.raises(FileNotFoundError, match="no shapefile"):
         geo.load_txgio_points(tmp_path, "48001", tmp_path / "p.shp")
 

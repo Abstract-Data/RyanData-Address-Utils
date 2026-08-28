@@ -83,7 +83,7 @@ print(parsed[["addr_AddressNumber", "addr_StreetName", "addr_ZipCode"]])
 
 ## Drop-direction uniqueness
 
-Match rows after dropping street direction, keyed on number + name + type + county + precinct. Keys with two or more distinct directionals (blank counts as a state; `EAST` and `E` collapse) are refused.
+Match rows after dropping street direction, keyed on number + name + type + county + precinct. Pass `include_unit=True` to add unit to that key so unit-bearing rows do not collapse. Keys with two or more distinct directionals (blank counts as a state; `EAST` and `E` collapse) are refused.
 
 Derek Ryan's one-liner: a Texas SOS voter extract and which universes to run. The CLI fetches TxGIO address points, TIGER ADDRFEAT, and TLC precinct polygons into `~/.cache/ryandata-address-utils` when they are missing.
 
@@ -102,13 +102,21 @@ uv run ryandata-address-utils-setup uniqueness \
 Library use when you already have `pct`:
 
 ```python
-from ryandata_address_utils.match import match_drop_direction, match_addrfeat_ranges
+from ryandata_address_utils.match import (
+    addrfeat_range_field_names,
+    match_addrfeat_ranges,
+    match_drop_direction,
+)
 
 voters["outcome"] = match_drop_direction(voters, points)
-voters["tiger_outcome"] = match_addrfeat_ranges(voters, addrfeat_ranges)
+voters["outcome_unit"] = match_drop_direction(voters, points, include_unit=True)
+
+lfrom, lto, rfrom, rto = addrfeat_range_field_names(addrfeat.columns)
+ranges = addrfeat.rename(columns={lfrom: "lfrom", lto: "lto", rfrom: "rfrom", rto: "rto"})
+voters["tiger_outcome"] = match_addrfeat_ranges(voters, ranges)
 ```
 
-TIGER ADDRFEAT ranges use inclusive house containment and even/odd side parity. TIGER 2024 `LFROMADD` and 2025 `LFROMHN` both resolve. Import from `ryandata_address_utils.match`, not the top-level package.
+`match_addrfeat_ranges` expects canonical `lfrom`/`lto`/`rfrom`/`rto` columns. Raw TIGER 2024 `LFROMADD` / 2025 `LFROMHN` names must be resolved first. Import from `ryandata_address_utils.match`, not the top-level package.
 
 ## Programmatic build
 

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import pytest
+from hypothesis import given
+from hypothesis import strategies as st
 
 from ryandata_address_utils.match import (
     EXCLUDED_PROBLEM,
@@ -56,6 +58,25 @@ class TestAddrfeatRange:
 
     def test_reversed_from_to_still_covers(self) -> None:
         assert house_in_addrfeat_range("150", "198", "100", "", "") is True
+
+    @given(
+        house=st.integers(min_value=1, max_value=9999),
+        start=st.integers(min_value=1, max_value=9999),
+        end=st.integers(min_value=1, max_value=9999),
+        use_right=st.booleans(),
+    )
+    def test_matches_normalized_bounds_and_parity(
+        self, house: int, start: int, end: int, use_right: bool
+    ) -> None:
+        lo, hi = (start, end) if start <= end else (end, start)
+        expected = lo <= house <= hi
+        if expected and lo % 2 == hi % 2 and house % 2 != lo % 2:
+            expected = False
+        if use_right:
+            got = house_in_addrfeat_range(str(house), "", "", str(start), str(end))
+        else:
+            got = house_in_addrfeat_range(str(house), str(start), str(end), "", "")
+        assert got is expected
 
 
 class TestMatchAddrfeatRanges:

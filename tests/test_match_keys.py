@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+from hypothesis import given
+from hypothesis import strategies as st
+
 from ryandata_address_utils.match import (
     canon_dir,
     drop_direction_key,
     fullname_dir_and_nodir_key,
+    house_int,
     normalize_precinct_code,
 )
 
@@ -81,3 +85,29 @@ class TestFullnameDirAndNodirKey:
         loop_dir, loop_key = fullname_dir_and_nodir_key("LOOP 1604 W")
         assert loop_dir == "W"
         assert not loop_key.endswith(" W")
+
+    @given(
+        direction=st.sampled_from(["E", "W", "NORTH", "SOUTHWEST"]),
+        street=st.sampled_from(["MAIN ST", "LOOP 1604"]),
+        padding=st.text(alphabet=" \t", min_size=0, max_size=3),
+    )
+    def test_leading_or_trailing_direction_is_removed(
+        self, direction: str, street: str, padding: str
+    ) -> None:
+        raw_dir = f"{padding}{direction.lower()}{padding}"
+        raw_street = f"{padding}{street.lower()}{padding}"
+        leading = fullname_dir_and_nodir_key(f"{raw_dir} {raw_street}")
+        trailing = fullname_dir_and_nodir_key(f"{raw_street} {raw_dir}")
+        assert leading[0] == canon_dir(direction)
+        assert trailing[0] == canon_dir(direction)
+        assert leading[1] == trailing[1]
+        assert leading[1] == street
+
+
+class TestHouseInt:
+    def test_zero_is_a_house_number(self) -> None:
+        assert house_int(0) == 0
+        assert house_int("0") == 0
+
+    def test_none_is_missing(self) -> None:
+        assert house_int(None) is None
