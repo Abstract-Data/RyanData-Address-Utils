@@ -74,7 +74,17 @@ def load_txgio_points(zip_or_dir: Path, fips: str, precincts_path: Path) -> Any:
         matches = list(zip_path.glob(f"*_{fips}_ap.zip"))
         if not matches:
             return pd.DataFrame(
-                columns=["num", "street_key_nodir", "county", "pct", "dir", "lon", "lat"]
+                columns=[
+                    "num",
+                    "street_key_nodir",
+                    "county",
+                    "pct",
+                    "pre_dir",
+                    "post_dir",
+                    "zip5",
+                    "lon",
+                    "lat",
+                ]
             )
         zip_path = matches[0]
     import zipfile
@@ -96,9 +106,18 @@ def load_txgio_points(zip_or_dir: Path, fips: str, precincts_path: Path) -> Any:
                 gdf["St_Name"] if "St_Name" in gdf.columns else pd.Series([""] * len(gdf)),
                 gdf["St_PosTyp"] if "St_PosTyp" in gdf.columns else pd.Series([""] * len(gdf)),
             ).to_numpy(),
-            "dir": canon_dir_series(
-                gdf["St_PreDir"] if "St_PreDir" in gdf.columns else ""
+            "pre_dir": canon_dir_series(
+                gdf["St_PreDir"] if "St_PreDir" in gdf.columns else pd.Series([""] * len(gdf))
             ).to_numpy(),
+            "post_dir": canon_dir_series(
+                gdf["St_PosDir"] if "St_PosDir" in gdf.columns else pd.Series([""] * len(gdf))
+            ).to_numpy(),
+            "zip5": as_str_series(
+                gdf["Post_Code"] if "Post_Code" in gdf.columns else pd.Series([""] * len(gdf))
+            )
+            .str.replace(r"\D", "", regex=True)
+            .str.slice(0, 5)
+            .to_numpy(),
             "lon": gdf.geometry.x.to_numpy(),
             "lat": gdf.geometry.y.to_numpy(),
             "county": fips,
@@ -136,14 +155,21 @@ def load_tiger_ranges(shp: Path, fips: str, precincts_path: Path) -> Any:
     else:
         fullnames = pd.Series([""] * len(gdf))
     dirs: list[str] = []
+    pres: list[str] = []
+    posts: list[str] = []
     keys: list[str] = []
     for name in fullnames.tolist():
-        d, key = fullname_dir_and_nodir_key(name)
-        dirs.append(d)
+        pair, key = fullname_dir_and_nodir_key(name)
+        pre, _, post = pair.partition("|")
+        dirs.append(pair)
+        pres.append(pre)
+        posts.append(post)
         keys.append(key)
     pdf = pd.DataFrame(
         {
             "street_key_nodir": keys,
+            "pre_dir": pres,
+            "post_dir": posts,
             "dir": dirs,
             "lfrom": gdf[lfrom_c].astype(str) if lfrom_c else "",
             "lto": gdf[lto_c].astype(str) if lto_c else "",

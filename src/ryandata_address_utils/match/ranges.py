@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 
 from ryandata_address_utils.match.keys import (
     as_str_series,
-    canon_dir_series,
+    dir_pair_canon_series,
     house_int,
     precinct_series,
     require_pandas,
@@ -142,7 +142,7 @@ def match_addrfeat_ranges(voters: pd.DataFrame, ranges: pd.DataFrame) -> pd.Seri
             "_street": as_str_series(ranges["street_key_nodir"]).to_numpy(),
             "_county": as_str_series(ranges["county"]).to_numpy(),
             "_pct": precinct_series(ranges["pct"]).to_numpy(),
-            "_dir": canon_dir_series(ranges["dir"]).to_numpy(),
+            "_dir": dir_pair_canon_series(ranges["pre_dir"], ranges["post_dir"]).to_numpy(),
             "lfrom": as_str_series(ranges["lfrom"]).to_numpy(),
             "lto": as_str_series(ranges["lto"]).to_numpy(),
             "rfrom": as_str_series(ranges["rfrom"]).to_numpy(),

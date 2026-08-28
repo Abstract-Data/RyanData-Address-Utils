@@ -18,9 +18,9 @@ from ryandata_address_utils.match.voters import (  # noqa: E402
 def test_sos_columns_become_match_keys(tmp_path: Path) -> None:
     path = tmp_path / "vf.csv"
     path.write_text(
-        "COUNTY,PCT,RHNUM,RSTPRE,RSTNAME,RSTTYPE,STATUS\n"
-        "ANDERSON,1,900,E,MAIN,ST,A\n"
-        "MCLENNAN,3,150,,OAK,AVE,A\n",
+        "COUNTY,PCT,RHNUM,RSTPRE,RSTNAME,RSTTYPE,RSTSFX,STATUS\n"
+        "ANDERSON,1,900,E,MAIN,ST,,A\n"
+        "MCLENNAN,3,150,,OAK,AVE,N,A\n",
         encoding="utf-8",
     )
     raw = load_voterfile(path)
@@ -29,6 +29,8 @@ def test_sos_columns_become_match_keys(tmp_path: Path) -> None:
     assert out["num"].tolist() == ["900", "150"]
     assert out["street_key_nodir"].tolist() == ["MAIN ST", "OAK AVE"]
     assert "E" not in out["street_key_nodir"].iloc[0]
+    assert out["pre_dir"].tolist() == ["E", ""]
+    assert out["post_dir"].tolist() == ["", "N"]
 
 
 def test_counties_filter(tmp_path: Path) -> None:

@@ -156,7 +156,8 @@ def fullname_dir_and_nodir_key(fullname: str) -> tuple[str, str]:
     Returns
     -------
     tuple[str, str]
-        ``(dir_canon, street_key_nodir)``.
+        ``(dir_pair, street_key_nodir)``. The pair is ``PRE|POST`` so
+        ``E MAIN ST`` (``E|``) is not ``MAIN ST E`` (``|E``).
     """
     tokens = str(fullname or "").strip().upper().split()
     pre = ""
@@ -167,8 +168,7 @@ def fullname_dir_and_nodir_key(fullname: str) -> tuple[str, str]:
     if tokens and _is_directional_token(tokens[-1]):
         post = canon_dir(tokens[-1])
         tokens = tokens[:-1]
-    dir_canon = pre or post
-    return dir_canon, " ".join(tokens)
+    return dir_pair_canon(pre, post), " ".join(tokens)
 
 
 def house_int(value: object) -> int | None:

@@ -91,7 +91,17 @@ def test_attach_precincts_joins(monkeypatch: pytest.MonkeyPatch, tmp_path: Path)
 def test_load_txgio_missing_zip(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setattr(geo, "require_geopandas", MagicMock())
     out = geo.load_txgio_points(tmp_path, "48001", tmp_path / "p.shp")
-    assert list(out.columns) == ["num", "street_key_nodir", "county", "pct", "dir", "lon", "lat"]
+    assert list(out.columns) == [
+        "num",
+        "street_key_nodir",
+        "county",
+        "pct",
+        "pre_dir",
+        "post_dir",
+        "zip5",
+        "lon",
+        "lat",
+    ]
     assert out.empty
 
 
@@ -107,7 +117,15 @@ def test_load_txgio_points_from_zip(monkeypatch: pytest.MonkeyPatch, tmp_path: P
         def to_epsg(self) -> int:
             return 3857
 
-    columns = {"Add_Number", "St_Name", "St_PosTyp", "St_PreDir", "St_PreTyp"}
+    columns = {
+        "Add_Number",
+        "St_Name",
+        "St_PosTyp",
+        "St_PreDir",
+        "St_PosDir",
+        "St_PreTyp",
+        "Post_Code",
+    }
     gdf = MagicMock()
     gdf.crs = _CRS()
     gdf.columns = list(columns)
@@ -118,7 +136,9 @@ def test_load_txgio_points_from_zip(monkeypatch: pytest.MonkeyPatch, tmp_path: P
             "St_Name": "MAIN",
             "St_PosTyp": "ST",
             "St_PreDir": "E",
+            "St_PosDir": "N",
             "St_PreTyp": "FM",
+            "Post_Code": "75701-1234",
         }[str(key)]
     )
     gdf.geometry = SimpleNamespace(x=pd.Series([-95.0]), y=pd.Series([31.0]))
@@ -133,7 +153,9 @@ def test_load_txgio_points_from_zip(monkeypatch: pytest.MonkeyPatch, tmp_path: P
     )
     out = geo.load_txgio_points(tmp_path, "48001", tmp_path / "p.shp")
     assert out["num"].tolist() == ["150"]
-    assert out["dir"].tolist() == ["E"]
+    assert out["pre_dir"].tolist() == ["E"]
+    assert out["post_dir"].tolist() == ["N"]
+    assert out["zip5"].tolist() == ["75701"]
     assert "FM" in out["street_key_nodir"].iloc[0]
     gdf.to_crs.assert_called_once()
     gpd.read_file.assert_called_once()
@@ -177,7 +199,40 @@ def test_load_tiger_ranges_reprojects_and_parses_fullname(
     )
     out = geo.load_tiger_ranges(tmp_path / "tl.shp", "48001", tmp_path / "p.shp")
     gdf.to_crs.assert_called_once_with(geo.CRS)
-    assert out["dir"].tolist() == ["E"]
+    assert out["pre_dir"].tolist() == ["E"]
+    assert out["post_dir"].tolist() == [""]
+    assert out["dir"].tolist() == ["E|"]
+    assert out["street_key_nodir"].tolist() == ["MAIN ST"]
+
+
+def test_load_tiger_ranges_keeps_suffix_directional(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    gdf = MagicMock()
+    gdf.crs = None
+    gdf.columns = ["FULLNAME", "LFROMHN", "LTOHN", "RFROMHN", "RTOHN"]
+    gdf.__contains__.side_effect = lambda key: key in gdf.columns
+    gdf.__len__.return_value = 1
+
+    def _col(key: object) -> pd.Series:
+        if key == "FULLNAME":
+            return pd.Series(["MAIN ST W"])
+        return pd.Series(["100"])
+
+    gdf.__getitem__.side_effect = _col
+    gdf.geometry = SimpleNamespace(centroid=SimpleNamespace(x=pd.Series([0.0]), y=pd.Series([0.0])))
+    gpd = MagicMock()
+    gpd.read_file.return_value = gdf
+    monkeypatch.setattr(geo, "require_geopandas", lambda: gpd)
+    monkeypatch.setattr(
+        geo,
+        "attach_precincts",
+        lambda frame, path, **k: frame.assign(pct="1"),
+    )
+    out = geo.load_tiger_ranges(tmp_path / "tl.shp", "48001", tmp_path / "p.shp")
+    assert out["pre_dir"].tolist() == [""]
+    assert out["post_dir"].tolist() == ["W"]
+    assert out["dir"].tolist() == ["|W"]
     assert out["street_key_nodir"].tolist() == ["MAIN ST"]
 
 

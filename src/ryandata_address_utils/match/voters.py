@@ -105,6 +105,6 @@ def canonicalize_voters(raw: pd.DataFrame) -> pd.DataFrame:
     )
     if "VUID" in raw.columns:
         out["vuid"] = _col(raw, "VUID")
-    if "RSTPRE" in raw.columns:
-        out["dir"] = _col(raw, "RSTPRE")
+    out["pre_dir"] = _col(raw, "RSTPRE")
+    out["post_dir"] = _col(raw, "RSTSFX")
     return out

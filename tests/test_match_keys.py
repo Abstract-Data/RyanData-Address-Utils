@@ -86,7 +86,7 @@ class TestDropDirectionKey:
 class TestFullnameDirAndNodirKey:
     def test_strips_leading_directional(self) -> None:
         d, key = fullname_dir_and_nodir_key("E MAIN ST")
-        assert d == "E"
+        assert d == "E|"
         assert "MAIN" in key
         assert key == fullname_dir_and_nodir_key("W MAIN ST")[1]
 
@@ -95,9 +95,11 @@ class TestFullnameDirAndNodirKey:
         suf_dir, suf_key = fullname_dir_and_nodir_key("MAIN ST W")
         assert pre_key == suf_key
         assert not pre_key.endswith(" W")
-        assert suf_dir == "W"
+        assert pre_dir == "E|"
+        assert suf_dir == "|W"
+        assert pre_dir != suf_dir
         loop_dir, loop_key = fullname_dir_and_nodir_key("LOOP 1604 W")
-        assert loop_dir == "W"
+        assert loop_dir == "|W"
         assert not loop_key.endswith(" W")
 
     @given(
@@ -112,8 +114,9 @@ class TestFullnameDirAndNodirKey:
         raw_street = f"{padding}{street.lower()}{padding}"
         leading = fullname_dir_and_nodir_key(f"{raw_dir} {raw_street}")
         trailing = fullname_dir_and_nodir_key(f"{raw_street} {raw_dir}")
-        assert leading[0] == canon_dir(direction)
-        assert trailing[0] == canon_dir(direction)
+        assert leading[0] == dir_pair_canon(direction, "")
+        assert trailing[0] == dir_pair_canon("", direction)
+        assert leading[0] != trailing[0]
         assert leading[1] == trailing[1]
         assert leading[1] == street
 

@@ -89,7 +89,8 @@ class TestMatchAddrfeatRanges:
                 "street_key_nodir": "MAIN ST",
                 "county": "48001",
                 "pct": "1",
-                "dir": "E",
+                "pre_dir": "E",
+                "post_dir": "",
                 "lfrom": "100",
                 "lto": "198",
                 "rfrom": "",
@@ -112,7 +113,8 @@ class TestMatchAddrfeatRanges:
                 "street_key_nodir": "MAIN ST",
                 "county": "48001",
                 "pct": "1",
-                "dir": "E",
+                "pre_dir": "E",
+                "post_dir": "",
                 "lfrom": "100",
                 "lto": "198",
                 "rfrom": "",
@@ -122,7 +124,8 @@ class TestMatchAddrfeatRanges:
                 "street_key_nodir": "MAIN ST",
                 "county": "48001",
                 "pct": "1",
-                "dir": "W",
+                "pre_dir": "W",
+                "post_dir": "",
                 "lfrom": "100",
                 "lto": "198",
                 "rfrom": "",
@@ -145,7 +148,8 @@ class TestMatchAddrfeatRanges:
                 "street_key_nodir": "MAIN ST",
                 "county": "48001",
                 "pct": "1",
-                "dir": "E",
+                "pre_dir": "E",
+                "post_dir": "",
                 "lfrom": "100",
                 "lto": "198",
                 "rfrom": "",
@@ -155,7 +159,8 @@ class TestMatchAddrfeatRanges:
                 "street_key_nodir": "MAIN ST",
                 "county": "48001",
                 "pct": "1",
-                "dir": "W",
+                "pre_dir": "W",
+                "post_dir": "",
                 "lfrom": "101",
                 "lto": "199",
                 "rfrom": "",
@@ -179,7 +184,8 @@ class TestMatchAddrfeatRanges:
                 "street_key_nodir": "MAIN ST",
                 "county": "48001",
                 "pct": "1",
-                "dir": "E",
+                "pre_dir": "E",
+                "post_dir": "",
                 "lfrom": "100",
                 "lto": "198",
                 "rfrom": "",
@@ -189,6 +195,41 @@ class TestMatchAddrfeatRanges:
         out = match_addrfeat_ranges(voters, ranges)
         assert out.empty
         assert out.name == "outcome"
+
+    def test_prefix_east_and_suffix_east_covering_same_number_is_problem(self) -> None:
+        ranges = self._ranges(
+            {
+                "street_key_nodir": "MAIN ST",
+                "county": "48001",
+                "pct": "1",
+                "pre_dir": "E",
+                "post_dir": "",
+                "lfrom": "100",
+                "lto": "198",
+                "rfrom": "",
+                "rto": "",
+            },
+            {
+                "street_key_nodir": "MAIN ST",
+                "county": "48001",
+                "pct": "1",
+                "pre_dir": "",
+                "post_dir": "E",
+                "lfrom": "100",
+                "lto": "198",
+                "rfrom": "",
+                "rto": "",
+            },
+        )
+        voters = pd.DataFrame(
+            {
+                "num": ["150"],
+                "street_key_nodir": ["MAIN ST"],
+                "county": ["48001"],
+                "pct": ["1"],
+            }
+        )
+        assert match_addrfeat_ranges(voters, ranges).tolist() == [EXCLUDED_PROBLEM]
 
     def test_empty_ranges_are_unmatched(self) -> None:
         voters = pd.DataFrame(
@@ -200,6 +241,16 @@ class TestMatchAddrfeatRanges:
             }
         )
         ranges = pd.DataFrame(
-            columns=["street_key_nodir", "county", "pct", "dir", "lfrom", "lto", "rfrom", "rto"]
+            columns=[
+                "street_key_nodir",
+                "county",
+                "pct",
+                "pre_dir",
+                "post_dir",
+                "lfrom",
+                "lto",
+                "rfrom",
+                "rto",
+            ]
         )
         assert match_addrfeat_ranges(voters, ranges).tolist() == [UNMATCHED]
