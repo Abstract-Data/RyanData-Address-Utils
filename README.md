@@ -85,6 +85,12 @@ print(parsed[["addr_AddressNumber", "addr_StreetName", "addr_ZipCode"]])
 
 Match rows after dropping street direction, keyed on number + name + type + county + precinct. Pass `include_unit=True` to add unit to that key so unit-bearing rows do not collapse. Keys with two or more distinct directionals (blank counts as a state; `EAST` and `E` collapse) are refused.
 
+Direction is a **PRE|POST** pair, not prefix-only. `E MAIN` (`E|`) is not `MAIN E` (`|E`). Suffix twins (`MAIN ST N` vs `MAIN ST S`) are refused the same way as `E`/`W`. TxGIO uses `St_PreDir` + `St_PosDir`; TIGER `FULLNAME` keeps both ends; voter rows use `RSTPRE` + `RSTSFX`. The motivating file is a vendor extract **missing** street direction, not a raw SOS file that already has `RSTPRE`.
+
+`summary.json` reports uniqueness at precinct, county, and ZIP (ZIP when `Post_Code` is present). CD is included only if a `cd` column already exists — this package does not download congressional districts. It also reports **cross-precinct** twins: keys that look unique once precinct splits them, but collide at county. That pool is the silent false-match reservoir if `PCT` is stale or in a different namespace than the TLC code stamped onto the points.
+
+Using precinct as the join key is circular if the reason you matched TxGIO is to place or validate precinct. Prefer TLC `Precincts##P` (current default is the 2026 primary vintage) over an older general-election polygon. House-number suffixes (`900` vs `900A`) are not in the uniqueness key.
+
 Derek Ryan's one-liner: a Texas SOS voter extract and which universes to run. The CLI fetches TxGIO address points, TIGER ADDRFEAT, and TLC precinct polygons into `~/.cache/ryandata-address-utils` when they are missing.
 
 ```bash
