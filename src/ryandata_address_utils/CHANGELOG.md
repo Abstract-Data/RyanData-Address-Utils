@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/Abstract-Data/RyanData-Address-Utils/compare/address-utils-v0.8.0...address-utils-v0.9.0) (2026-08-28)
+
+
+### Features
+
+* drop-direction uniqueness + ADDRFEAT range matcher ([#23](https://github.com/Abstract-Data/RyanData-Address-Utils/issues/23)) ([7c25899](https://github.com/Abstract-Data/RyanData-Address-Utils/commit/7c258997c29aba7bf2c8bef706bad13ff3481934))
+
 ## [0.8.0](https://github.com/Abstract-Data/RyanData-Address-Utils/compare/address-utils-v0.7.2...address-utils-v0.8.0) (2026-08-05)
 
 
