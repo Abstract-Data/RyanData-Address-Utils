@@ -10,7 +10,13 @@ from typing import Any
 from ryandata_address_utils.match.keys import require_pandas
 from ryandata_address_utils.match.ranges import match_addrfeat_ranges
 from ryandata_address_utils.match.texas import county_fips_from_name
-from ryandata_address_utils.match.uniqueness import MATCH, match_drop_direction
+from ryandata_address_utils.match.uniqueness import (
+    MATCH,
+    cross_precinct_twin_counts,
+    match_drop_direction,
+    problem_pattern_counts,
+    uniqueness_at_geography,
+)
 from ryandata_address_utils.match.voters import canonicalize_voters, load_voterfile
 
 DEFAULT_CACHE = Path.home() / ".cache" / "ryandata-address-utils"
@@ -121,6 +127,7 @@ def run_uniqueness(
 
     txgio_parts: list[Any] = []
     tiger_parts: list[Any] = []
+    txgio_frames: list[Any] = []
     for fips in fips_list:
         vf = voters.loc[voters["county"] == fips]
         if vf.empty:
@@ -129,6 +136,8 @@ def run_uniqueness(
             if txgio_loader is None:
                 raise RuntimeError("txgio loader missing")
             points = txgio_loader(zip_or_dir=txgio_dir, fips=fips, precincts_path=precincts_path)
+            if not points.empty:
+                txgio_frames.append(points)
             series = match_drop_direction(vf, points)
             txgio_parts.append(pd.Series(series.to_numpy(), index=vf.index, name="txgio_outcome"))
         if "tiger" in wanted:
@@ -158,5 +167,18 @@ def run_uniqueness(
         summary["txgio_match"] = int((result["txgio_outcome"] == MATCH).sum())
     if "tiger_outcome" in result.columns:
         summary["tiger_match"] = int((result["tiger_outcome"] == MATCH).sum())
+    if txgio_frames:
+        all_points = pd.concat(txgio_frames, ignore_index=True)
+        grains = ["precinct", "county"]
+        if "zip5" in all_points.columns:
+            grains.append("zip")
+        if "cd" in all_points.columns:
+            grains.append("cd")
+        summary["uniqueness"] = {
+            grain: uniqueness_at_geography(all_points, geography=grain, include_unit=False)
+            for grain in grains
+        }
+        summary["twins"] = cross_precinct_twin_counts(all_points)
+        summary["patterns"] = problem_pattern_counts(all_points)
     (out / "summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     return summary

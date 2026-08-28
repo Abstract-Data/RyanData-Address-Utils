@@ -13,7 +13,10 @@ from ryandata_address_utils.match import (  # noqa: E402
     MATCH,
     UNMATCHED,
     classify_problem_keys,
+    cross_precinct_twin_counts,
     match_drop_direction,
+    problem_pattern_counts,
+    uniqueness_at_geography,
 )
 
 
@@ -420,3 +423,191 @@ class TestDirPairUniqueness:
             }
         )
         assert match_drop_direction(voters, points).tolist() == [EXCLUDED_PROBLEM]
+
+
+class TestUniquenessAtGeography:
+    def test_ew_twins_are_a_problem_at_county_not_when_precinct_splits(self) -> None:
+        frame = _points(
+            {
+                "num": "900",
+                "street_key_nodir": "MAIN ST",
+                "county": "48001",
+                "pct": "1",
+                "zip5": "75701",
+                "pre_dir": "E",
+                "post_dir": "",
+                "unit": "",
+            },
+            {
+                "num": "900",
+                "street_key_nodir": "MAIN ST",
+                "county": "48001",
+                "pct": "2",
+                "zip5": "75701",
+                "pre_dir": "W",
+                "post_dir": "",
+                "unit": "",
+            },
+        )
+        county = uniqueness_at_geography(frame, geography="county", include_unit=False)
+        precinct = uniqueness_at_geography(frame, geography="precinct", include_unit=False)
+        assert county["n_problem_keys"] == 1
+        assert precinct["n_problem_keys"] == 0
+
+    def test_zip_grain_splits_twins_and_missing_zip5_fails_loud(self) -> None:
+        frame = _points(
+            {
+                "num": "900",
+                "street_key_nodir": "MAIN ST",
+                "county": "48001",
+                "pct": "1",
+                "zip5": "75701",
+                "pre_dir": "E",
+                "post_dir": "",
+            },
+            {
+                "num": "900",
+                "street_key_nodir": "MAIN ST",
+                "county": "48001",
+                "pct": "1",
+                "zip5": "75702",
+                "pre_dir": "W",
+                "post_dir": "",
+            },
+        )
+        assert (
+            uniqueness_at_geography(frame, geography="zip", include_unit=False)["n_problem_keys"]
+            == 0
+        )
+        assert (
+            uniqueness_at_geography(frame, geography="precinct", include_unit=False)[
+                "n_problem_keys"
+            ]
+            == 1
+        )
+        no_zip = frame.drop(columns=["zip5"])
+        with pytest.raises(ValueError, match="zip5"):
+            uniqueness_at_geography(no_zip, geography="zip", include_unit=False)
+
+
+class TestCrossPrecinctTwins:
+    def test_cross_precinct_twins_are_unique_at_pct_problem_at_county(self) -> None:
+        frame = _points(
+            {
+                "num": "900",
+                "street_key_nodir": "MAIN ST",
+                "county": "48001",
+                "pct": "1",
+                "pre_dir": "E",
+                "post_dir": "",
+            },
+            {
+                "num": "900",
+                "street_key_nodir": "MAIN ST",
+                "county": "48001",
+                "pct": "2",
+                "pre_dir": "W",
+                "post_dir": "",
+            },
+            {
+                "num": "100",
+                "street_key_nodir": "OAK AVE",
+                "county": "48001",
+                "pct": "1",
+                "pre_dir": "N",
+                "post_dir": "",
+            },
+            {
+                "num": "100",
+                "street_key_nodir": "OAK AVE",
+                "county": "48001",
+                "pct": "1",
+                "pre_dir": "S",
+                "post_dir": "",
+            },
+        )
+        out = cross_precinct_twin_counts(frame)
+        assert out["n_twin_keys_split_by_precinct"] == 1
+        assert out["n_points_on_split_twins"] == 2
+
+
+class TestProblemPatterns:
+    def test_ew_prefix_suffix_blank_and_position(self) -> None:
+        ew = _points(
+            {
+                "num": "1",
+                "street_key_nodir": "A ST",
+                "county": "48001",
+                "pct": "1",
+                "pre_dir": "E",
+                "post_dir": "",
+            },
+            {
+                "num": "1",
+                "street_key_nodir": "A ST",
+                "county": "48001",
+                "pct": "1",
+                "pre_dir": "W",
+                "post_dir": "",
+            },
+        )
+        suffix = _points(
+            {
+                "num": "2",
+                "street_key_nodir": "B ST",
+                "county": "48001",
+                "pct": "1",
+                "pre_dir": "",
+                "post_dir": "N",
+            },
+            {
+                "num": "2",
+                "street_key_nodir": "B ST",
+                "county": "48001",
+                "pct": "1",
+                "pre_dir": "",
+                "post_dir": "S",
+            },
+        )
+        blank = _points(
+            {
+                "num": "3",
+                "street_key_nodir": "C ST",
+                "county": "48001",
+                "pct": "1",
+                "pre_dir": "E",
+                "post_dir": "",
+            },
+            {
+                "num": "3",
+                "street_key_nodir": "C ST",
+                "county": "48001",
+                "pct": "1",
+                "pre_dir": "",
+                "post_dir": "",
+            },
+        )
+        position = _points(
+            {
+                "num": "4",
+                "street_key_nodir": "D ST",
+                "county": "48001",
+                "pct": "1",
+                "pre_dir": "E",
+                "post_dir": "",
+            },
+            {
+                "num": "4",
+                "street_key_nodir": "D ST",
+                "county": "48001",
+                "pct": "1",
+                "pre_dir": "",
+                "post_dir": "E",
+            },
+        )
+        combined = pd.concat([ew, suffix, blank, position], ignore_index=True)
+        out = problem_pattern_counts(combined)
+        assert out["ew_prefix"] == 1
+        assert out["suffix_only"] == 1
+        assert out["blank_vs_dir"] == 1
+        assert out["prefix_vs_suffix"] == 1

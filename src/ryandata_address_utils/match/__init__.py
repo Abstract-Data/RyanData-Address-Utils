@@ -42,7 +42,10 @@ from ryandata_address_utils.match.uniqueness import (
     MATCH,
     UNMATCHED,
     classify_problem_keys,
+    cross_precinct_twin_counts,
     match_drop_direction,
+    problem_pattern_counts,
+    uniqueness_at_geography,
 )
 
 __all__ = [
@@ -53,6 +56,7 @@ __all__ = [
     "addrfeat_range_field_names",
     "canon_dir",
     "classify_problem_keys",
+    "cross_precinct_twin_counts",
     "dir_pair_canon",
     "drop_direction_key",
     "fullname_dir_and_nodir_key",
@@ -61,4 +65,6 @@ __all__ = [
     "match_addrfeat_ranges",
     "match_drop_direction",
     "normalize_precinct_code",
+    "problem_pattern_counts",
+    "uniqueness_at_geography",
 ]

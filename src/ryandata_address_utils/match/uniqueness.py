@@ -124,3 +124,131 @@ def match_drop_direction(
     outcome: Any = pd.Series(UNMATCHED, index=joined.index)
     outcome = outcome.mask(is_hit, MATCH).mask(is_problem, EXCLUDED_PROBLEM)
     return pd.Series(outcome.to_numpy(), index=voters.index, name="outcome")
+
+
+_GEO_KEYS: dict[str, tuple[str, ...]] = {
+    "precinct": ("num", "street_key_nodir", "county", "pct"),
+    "county": ("num", "street_key_nodir", "county"),
+    "zip": ("num", "street_key_nodir", "county", "zip5"),
+    "cd": ("num", "street_key_nodir", "cd"),
+}
+
+
+def uniqueness_at_geography(
+    points: pd.DataFrame,
+    *,
+    geography: str,
+    include_unit: bool = False,
+) -> dict[str, int | float]:
+    """Problem-key rates at one geographic grain. Missing key columns fail loud."""
+    if geography not in _GEO_KEYS:
+        raise ValueError(f"unknown geography {geography!r}; use {sorted(_GEO_KEYS)}")
+    needed = list(_GEO_KEYS[geography])
+    missing = [c for c in needed if c not in points.columns]
+    if missing:
+        raise ValueError(f"uniqueness_at_geography {geography} missing columns {missing}")
+    classified = classify_problem_keys(points, include_unit=include_unit)
+    key_cols = ["pct_norm" if c == "pct" else c for c in needed]
+    if include_unit:
+        key_cols.append("unit")
+    stats = (
+        classified.groupby(key_cols, dropna=False, sort=False, observed=True)
+        .agg(n_dirs=("dir_canon", "nunique"), n_points=("dir_canon", "size"))
+        .reset_index()
+    )
+    stats["is_problem"] = stats["n_dirs"] >= 2
+    n_keys = len(stats)
+    n_problem = int(stats["is_problem"].sum()) if n_keys else 0
+    n_points = len(classified)
+    n_points_problem = int(stats.loc[stats["is_problem"], "n_points"].sum()) if n_keys else 0
+    geo_col = key_cols[-1] if geography != "county" else None
+    n_blank_geo = 0
+    if geo_col is not None and geo_col in stats.columns:
+        n_blank_geo = int((stats[geo_col].fillna("").astype(str) == "").sum())
+    return {
+        "n_keys": n_keys,
+        "n_problem_keys": n_problem,
+        "n_points": n_points,
+        "n_points_problem": n_points_problem,
+        "pct_keys_excluded": round(100.0 * n_problem / n_keys, 4) if n_keys else 0.0,
+        "pct_points_excluded": round(100.0 * n_points_problem / n_points, 4) if n_points else 0.0,
+        "n_blank_geo": n_blank_geo,
+    }
+
+
+def cross_precinct_twin_counts(points: pd.DataFrame) -> dict[str, int]:
+    """County-level directional twins that precinct uniqueness would accept."""
+    classified = classify_problem_keys(points, include_unit=False)
+    county_cols = ["num", "street_key_nodir", "county"]
+    county = (
+        classified.groupby(county_cols, dropna=False, sort=False, observed=True)
+        .agg(n_dirs_county=("dir_canon", "nunique"), n_points=("dir_canon", "size"))
+        .reset_index()
+    )
+    pct = (
+        classified.groupby([*county_cols, "pct_norm"], dropna=False, sort=False, observed=True)
+        .agg(n_dirs_pct=("dir_canon", "nunique"))
+        .reset_index()
+    )
+    pct_max = (
+        pct.groupby(county_cols, dropna=False, sort=False, observed=True)
+        .agg(max_dirs_pct=("n_dirs_pct", "max"))
+        .reset_index()
+    )
+    split = county.merge(pct_max, on=county_cols, how="left")
+    split = split.loc[(split["n_dirs_county"] >= 2) & (split["max_dirs_pct"] < 2)]
+    n_keys = len(split)
+    n_points = int(split["n_points"].sum()) if n_keys else 0
+    return {
+        "n_twin_keys_split_by_precinct": n_keys,
+        "n_points_on_split_twins": n_points,
+    }
+
+
+def problem_pattern_label(dir_pairs: list[str]) -> str:
+    """One primary label per problem key. First match wins."""
+    pairs = [str(p) for p in dir_pairs]
+    if "E|" in pairs and "W|" in pairs:
+        return "ew_prefix"
+    if "N|" in pairs and "S|" in pairs:
+        return "ns_prefix"
+    if pairs and all(p.startswith("|") for p in pairs) and any(p != "|" for p in pairs):
+        return "suffix_only"
+    if "|" in pairs and any(p != "|" for p in pairs):
+        return "blank_vs_dir"
+    pres = {p.split("|", 1)[0] for p in pairs if "|" in p}
+    posts = {p.split("|", 1)[1] for p in pairs if "|" in p}
+    if (pres - {""}) & (posts - {""}):
+        return "prefix_vs_suffix"
+    tokens = {t for p in pairs for t in p.split("|") if t}
+    if any(a != b and (a.startswith(b) or b.startswith(a)) for a in tokens for b in tokens):
+        return "diagonal"
+    return "other"
+
+
+def problem_pattern_counts(points: pd.DataFrame) -> dict[str, int]:
+    """Count precinct-grain problem keys by :func:`problem_pattern_label`."""
+    pd = require_pandas()
+    classified = classify_problem_keys(points, include_unit=False)
+    counts: dict[str, int] = {
+        "ew_prefix": 0,
+        "ns_prefix": 0,
+        "suffix_only": 0,
+        "blank_vs_dir": 0,
+        "prefix_vs_suffix": 0,
+        "diagonal": 0,
+        "other": 0,
+    }
+    problems = classified.loc[classified["is_problem"]]
+    if problems.empty:
+        return counts
+    grouped = problems.groupby(
+        ["num", "street_key_nodir", "county", "pct_norm"],
+        dropna=False,
+        sort=False,
+        observed=True,
+    )["dir_canon"]
+    for _, dirs in grouped:
+        label = problem_pattern_label(list(pd.unique(dirs)))
+        counts[label] = counts.get(label, 0) + 1
+    return counts

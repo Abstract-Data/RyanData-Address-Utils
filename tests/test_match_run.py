@@ -89,6 +89,11 @@ def test_run_writes_outcomes_for_both_sources(tmp_path: Path) -> None:
     assert result["tiger_outcome"].tolist() == [MATCH]
     assert summary["sources"] == ["txgio", "tiger"]
     assert summary["n"] == 1
+    assert "uniqueness" in summary
+    assert "precinct" in summary["uniqueness"]
+    assert "county" in summary["uniqueness"]
+    assert "twins" in summary
+    assert "patterns" in summary
 
 
 def test_empty_voterfile_fails(tmp_path: Path) -> None:
