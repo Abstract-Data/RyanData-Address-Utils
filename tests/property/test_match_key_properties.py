@@ -7,6 +7,7 @@ from hypothesis import strategies as st
 
 from ryandata_address_utils.match import (
     canon_dir,
+    dir_pair_canon,
     drop_direction_key,
     fullname_dir_and_nodir_key,
     house_in_addrfeat_range,
@@ -71,8 +72,9 @@ def test_fullname_parser_removes_leading_or_trailing_direction(direction: str, s
     expected_street = " ".join(street.upper().split())
     leading = fullname_dir_and_nodir_key(f"{direction.lower()} {street}")
     trailing = fullname_dir_and_nodir_key(f"{street} {direction.lower()}")
-    assert leading == (canon_dir(direction), expected_street)
-    assert trailing == (canon_dir(direction), expected_street)
+    assert leading == (dir_pair_canon(direction, ""), expected_street)
+    assert trailing == (dir_pair_canon("", direction), expected_street)
+    assert leading[0] != trailing[0]
 
 
 @given(
