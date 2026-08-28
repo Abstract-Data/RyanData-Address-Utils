@@ -13,6 +13,7 @@ from ryandata_address_utils.match.fetch.http import USER_AGENT, download_file, h
 from ryandata_address_utils.match.fetch.precincts import (
     fetch_tx_precincts,
     parse_election_precinct_filename,
+    parse_tlc_precinct_resource,
     rank_tlc_precinct_resources,
     staged_precinct_filename,
 )
@@ -22,6 +23,7 @@ from ryandata_address_utils.match.fetch.tiger import (
     fetch_tiger_counties,
 )
 from ryandata_address_utils.match.fetch.txgio import (
+    _parse_acquisition_date,
     fetch_txgio_counties,
     list_resources,
     resolve_latest_collection,
@@ -179,12 +181,62 @@ class TestTigerAddrfeat:
         assert shp.name == "tl_2024_48001_addrfeat.shp"
         assert shp.exists()
 
+    def test_existing_unique_shapefile_is_reused(self, tmp_path: Path) -> None:
+        shp = tmp_path / "tl_2025_48001_addrfeat.shp"
+        shp.write_text("cached", encoding="utf-8")
+        out = fetch_addrfeat("48001", tmp_path, opener=_opener({}))
+        assert out == shp
+
+    def test_duplicate_shapefiles_fail(self, tmp_path: Path) -> None:
+        (tmp_path / "tl_2024_48001_addrfeat.shp").write_text("a", encoding="utf-8")
+        (tmp_path / "tl_2025_48001_addrfeat.shp").write_text("b", encoding="utf-8")
+        with pytest.raises(ValueError, match="unique"):
+            fetch_addrfeat("48001", tmp_path)
+
+    def test_non_404_is_not_swallowed(self, tmp_path: Path) -> None:
+        def opener(req: object, timeout: object = None) -> _BytesResponse:
+            url = getattr(req, "full_url", str(req))
+            raise urllib.error.HTTPError(url, 500, "boom", hdrs={}, fp=None)
+
+        with pytest.raises(urllib.error.HTTPError):
+            fetch_addrfeat("48001", tmp_path, years=(2025,), opener=opener)
+
+    def test_zip_without_shapefile_fails(self, tmp_path: Path) -> None:
+        from io import BytesIO
+
+        buf = BytesIO()
+        with zipfile.ZipFile(buf, "w") as zf:
+            zf.writestr("readme.txt", "no shp")
+        opener = _opener(
+            {
+                (
+                    "https://www2.census.gov/geo/tiger/TIGER2025/ADDRFEAT/"
+                    "tl_2025_48001_addrfeat.zip"
+                ): buf.getvalue(),
+            }
+        )
+        with pytest.raises(FileNotFoundError, match="contained no ADDRFEAT"):
+            fetch_addrfeat("48001", tmp_path, years=(2025,), opener=opener)
+
+    def test_empty_year_list_fails_without_http(self, tmp_path: Path) -> None:
+        with pytest.raises(FileNotFoundError, match="No ADDRFEAT"):
+            fetch_addrfeat("48001", tmp_path, years=(), opener=_opener({}))
+
 
 class TestHttpStatus:
     def test_http_error_code(self) -> None:
         err = urllib.error.HTTPError("http://x", 404, "no", hdrs={}, fp=None)
         assert http_status(err) == 404
         assert http_status(ValueError("nope")) is None
+
+
+class TestParseAcquisitionDate:
+    def test_blank_and_malformed_sort_as_oldest(self) -> None:
+        from datetime import date
+
+        assert _parse_acquisition_date(None) == date.min
+        assert _parse_acquisition_date("") == date.min
+        assert _parse_acquisition_date("not-a-date") == date.min
 
 
 class TestTlcRank:
@@ -203,6 +255,54 @@ class TestTlcRank:
         assert parse_election_precinct_filename("Precincts26P.shp") == (2026, "P")
         assert staged_precinct_filename(2026, "P") == "Precincts26P.shp"
         assert parse_election_precinct_filename("notes.txt") is None
+
+    def test_resource_roles_and_skips(self) -> None:
+        assert parse_tlc_precinct_resource("notes.txt", "ZIP") is None
+        assert parse_tlc_precinct_resource("Precincts26P districts.xlsx", "XLSX") == (
+            2026,
+            "P",
+            "districts",
+        )
+        assert parse_tlc_precinct_resource("Precincts26P.dbf", "DBF") is None
+        assert parse_tlc_precinct_resource("Precincts26P.zip", "") == (2026, "P", "shp")
+
+    def test_unparseable_and_districts_only_yield_none(self) -> None:
+        assert rank_tlc_precinct_resources([{"name": "readme.txt", "format": "TXT"}]) is None
+        pick = rank_tlc_precinct_resources(
+            [
+                {"name": "Precincts26P.zip", "format": "ZIP", "url": "http://shp"},
+                {
+                    "name": "Precincts26P districts.xlsx",
+                    "format": "XLSX",
+                    "url": "http://xls",
+                },
+            ]
+        )
+        assert pick is not None
+        assert pick["districts"]["url"] == "http://xls"
+
+
+class TestTxgioEmptyCatalog:
+    def test_no_address_points_collection_fails(self) -> None:
+        catalog = "https://api.tnris.org/api/v1/collections_catalog?limit=3000&offset=0"
+        opener = _opener({catalog: json.dumps({"results": []}).encode()})
+        with pytest.raises(RuntimeError, match="Address Points"):
+            resolve_latest_collection(opener=opener)
+
+    def test_blank_acquisition_date_is_oldest(self) -> None:
+        payload = {
+            "results": [
+                {
+                    "collection_id": "dated",
+                    "name": "Address Points",
+                    "acquisition_date": "2026-01-01",
+                },
+                {"collection_id": "blank", "name": "Address Points", "acquisition_date": ""},
+            ]
+        }
+        catalog = "https://api.tnris.org/api/v1/collections_catalog?limit=3000&offset=0"
+        latest = resolve_latest_collection(opener=_opener({catalog: json.dumps(payload).encode()}))
+        assert latest.collection_id == "dated"
 
 
 class TestFetchPrecincts:
@@ -231,6 +331,95 @@ class TestFetchPrecincts:
         shp = fetch_tx_precincts(tmp_path, opener=opener)
         assert shp.name == "Precincts26P.shp"
         assert shp.exists()
+
+    def _ckan(
+        self,
+        resources: list[dict[str, object]],
+        zip_url: str | None = None,
+        zip_bytes: bytes | None = None,
+    ):
+        payload = {"success": True, "result": {"resources": resources}}
+        mapping: dict[str, bytes] = {
+            "https://data.capitol.texas.gov/api/3/action/package_show?id=precincts": (
+                json.dumps(payload).encode()
+            ),
+        }
+        if zip_url is not None and zip_bytes is not None:
+            mapping[zip_url] = zip_bytes
+        return _opener(mapping)
+
+    def test_ckan_failure_and_no_shapefile(self, tmp_path: Path) -> None:
+        opener = _opener(
+            {
+                "https://data.capitol.texas.gov/api/3/action/package_show?id=precincts": (
+                    json.dumps({"success": False}).encode()
+                ),
+            }
+        )
+        with pytest.raises(RuntimeError, match="CKAN"):
+            fetch_tx_precincts(tmp_path, opener=opener)
+        empty = self._ckan([])
+        with pytest.raises(FileNotFoundError, match="No Precincts"):
+            fetch_tx_precincts(tmp_path, opener=empty)
+
+    def test_cached_shapefile_is_not_redownloaded(self, tmp_path: Path) -> None:
+        cached = tmp_path / "Precincts26P.shp"
+        cached.write_text("cached", encoding="utf-8")
+        opener = self._ckan(
+            [
+                {
+                    "name": "Precincts26P.zip",
+                    "format": "ZIP",
+                    "url": "https://example/Precincts26P.zip",
+                }
+            ]
+        )
+        shp = fetch_tx_precincts(tmp_path, opener=opener)
+        assert shp.read_text(encoding="utf-8") == "cached"
+
+    def test_missing_url_and_zip_without_shp(self, tmp_path: Path) -> None:
+        no_url = self._ckan([{"name": "Precincts26P.zip", "format": "ZIP", "url": ""}])
+        with pytest.raises(FileNotFoundError, match="no URL"):
+            fetch_tx_precincts(tmp_path, opener=no_url)
+        from io import BytesIO
+
+        buf = BytesIO()
+        with zipfile.ZipFile(buf, "w") as zf:
+            zf.writestr("readme.txt", "no shp")
+        opener = self._ckan(
+            [
+                {
+                    "name": "Precincts26P.zip",
+                    "format": "ZIP",
+                    "url": "https://example/Precincts26P.zip",
+                }
+            ],
+            zip_url="https://example/Precincts26P.zip",
+            zip_bytes=buf.getvalue(),
+        )
+        with pytest.raises(FileNotFoundError, match="contained no .shp"):
+            fetch_tx_precincts(tmp_path, opener=opener)
+
+    def test_stage_failure_if_copy_is_skipped(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        opener = self._ckan(
+            [
+                {
+                    "name": "Precincts26P.zip",
+                    "format": "ZIP",
+                    "url": "https://example/Precincts26P.zip",
+                }
+            ],
+            zip_url="https://example/Precincts26P.zip",
+            zip_bytes=_tiny_shp_zip("Precincts26P"),
+        )
+        monkeypatch.setattr(
+            "ryandata_address_utils.match.fetch.precincts.shutil.copy2",
+            lambda *a, **k: None,
+        )
+        with pytest.raises(FileNotFoundError, match="Failed to stage"):
+            fetch_tx_precincts(tmp_path, opener=opener)
 
 
 class TestFetchTxgioCounties:

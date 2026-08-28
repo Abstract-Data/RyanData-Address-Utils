@@ -33,6 +33,7 @@ Derek Ryan should only need a voter-file path and `--sources txgio`, `tiger`, or
 ## Checks
 
 - `uv run pytest tests/test_match_*.py -q`
+- `uv run pytest tests/test_match_keys.py tests/test_match_ranges.py tests/test_match_uniqueness.py tests/test_match_geo.py tests/test_match_fetch.py tests/test_match_run.py tests/test_match_cli.py tests/test_match_voters.py --cov=src/ryandata_address_utils/match --cov-report=term-missing --cov-fail-under=80`
 - `uv run pytest --cov=src --cov-fail-under=80`
 - `uv run ruff check src/ryandata_address_utils/match tests/test_match_*.py src/ryandata_address_utils/setup_cli.py`
 - `uv run ruff format --check` on those files

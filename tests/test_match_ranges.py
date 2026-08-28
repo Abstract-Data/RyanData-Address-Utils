@@ -172,6 +172,24 @@ class TestMatchAddrfeatRanges:
         )
         assert match_addrfeat_ranges(voters, ranges).tolist() == [MATCH]
 
+    def test_empty_voters_return_empty_series(self) -> None:
+        voters = pd.DataFrame(columns=["num", "street_key_nodir", "county", "pct"])
+        ranges = self._ranges(
+            {
+                "street_key_nodir": "MAIN ST",
+                "county": "48001",
+                "pct": "1",
+                "dir": "E",
+                "lfrom": "100",
+                "lto": "198",
+                "rfrom": "",
+                "rto": "",
+            }
+        )
+        out = match_addrfeat_ranges(voters, ranges)
+        assert out.empty
+        assert out.name == "outcome"
+
     def test_empty_ranges_are_unmatched(self) -> None:
         voters = pd.DataFrame(
             {

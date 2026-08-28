@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
@@ -28,6 +29,9 @@ class TestCanonDir:
         assert canon_dir("") == ""
         assert canon_dir(None) == ""
         assert canon_dir("   ") == ""
+
+    def test_unknown_token_stays_uppercased(self) -> None:
+        assert canon_dir("FOO") == "FOO"
 
 
 class TestNormalizePrecinctCode:
@@ -111,3 +115,24 @@ class TestHouseInt:
 
     def test_none_is_missing(self) -> None:
         assert house_int(None) is None
+
+    def test_no_digits_is_missing(self) -> None:
+        assert house_int("N/A") is None
+        assert house_int("APT") is None
+
+
+def test_require_pandas_message(monkeypatch: pytest.MonkeyPatch) -> None:
+    import builtins
+
+    from ryandata_address_utils.match import keys
+
+    real_import = builtins.__import__
+
+    def fake_import(name: str, *args: object, **kwargs: object):
+        if name == "pandas":
+            raise ImportError("no pandas")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+    with pytest.raises(ImportError, match="ryandata-address-utils\\[pandas\\]"):
+        keys.require_pandas()

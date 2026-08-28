@@ -292,3 +292,28 @@ class TestMatchDropDirection:
         out = match_drop_direction(voters, points)
         assert out.index.tolist() == [42]
         assert out.tolist() == [MATCH]
+
+    def test_empty_voters_and_points(self) -> None:
+        empty = pd.DataFrame(columns=["num", "street_key_nodir", "county", "pct", "dir"])
+        voters = _points(
+            {"num": "900", "street_key_nodir": "MAIN ST", "county": "48001", "pct": "1"}
+        )
+        assert match_drop_direction(empty, empty).empty
+        assert match_drop_direction(voters, empty).tolist() == [UNMATCHED]
+
+    def test_include_unit_fills_missing_unit_column(self) -> None:
+        points = _points(
+            {
+                "num": "900",
+                "street_key_nodir": "MAIN ST",
+                "county": "48001",
+                "pct": "1",
+                "dir": "E",
+            }
+        )
+        voters = _points(
+            {"num": "900", "street_key_nodir": "MAIN ST", "county": "48001", "pct": "1"}
+        )
+        classified = classify_problem_keys(points, include_unit=True)
+        assert "unit" in classified.columns
+        assert match_drop_direction(voters, points, include_unit=True).tolist() == [MATCH]
